@@ -4,4 +4,4 @@ I downloaded the dataset for Dublin Ireland from MapZen at https://s3.amazonaws.
 
 This corresponds to the City of Dublin on Open Street Map: http://www.openstreetmap.org/node/3473474851
 
-I picked this area as I've been living there for 6 years and am familiar with local data formats.
+I picked this area as I've been living there for 6 years and am familiar with cultural backgrounds and local address formats. Living there also made it the most interesting for me to explore.
