@@ -1,0 +1,468 @@
+---
+title: "Playlivemanager Exploration"
+output: html_document
+---
+
+### Introduction
+
+This is a data exploration for the Udacity Data Analyst Nano Degree.
+Data analyzed stems from the Online Fantasy Football Manager www.playlivemanager.com and contains data on Football (Soccer) players from the German Bundesliga for the first half of the 2015/2016 season.
+
+Data has been gathered in JSON format via the API, i.e. at http://www.playlivemanager.com/api/players/64440/stats/round (where 64440 is the respective player id). The JSON data has been converted to a table and information such as home club, position and player name has been matched via webscraping from www.playlivemanager.com.
+
+This data analysis explores drivers for 'total_earnings', which is the objective to maximize in the fantasy football game.
+
+
+#### Loading Data & Libraries
+
+```{r Load Data & Libraries}
+suppressMessages(library("ggplot2"))
+suppressMessages(library("dplyr"))
+suppressMessages(library("reshape2"))
+plm <- read.csv("plm.csv")
+dim(plm)
+names(plm)
+str(plm)
+```
+
+### 1 Analysis and exploration of data
+
+
+#### First look
+
+Initial investigation of total earnings distribution:
+```{r init, echo}
+qplot(x = total_earnings, data = plm)
+```
+
+It looks like lots of players have around 0 points. Only 11 players can play per match, so a lot of players in the dataset will not play on a particular matchday and therefore earn no points. The 'status' variable could help us identify if that explains the many 0s. Let's zoom in on the values close to zero and break it down by status:
+
+```{r byStatus}
+qplot(x = total_earnings, data = plm,
+      binwidth = 10000,
+      color = I('black'), fill = I('lightblue')) +
+  facet_wrap(~status, ncol = 1) +
+  scale_x_continuous(limits = c(-10000,10000))
+```
+
+Indeed, it looks like players who are 'not_present' or on the 'bench' are almost solely responsible for the many obersvations with 0 earnings. This highlights the importance of picking players that are likely to play. In terms of analyzing the effect of other variables, these observations can be confounding, so we will take them out from here on onwards.
+
+
+Let's look at the plot again excluding players on the bench or not present.
+```{r nozeros}
+plm.played <- subset(plm, !status %in% c("bench", "not_present"))
+qplot(x = total_earnings, data = plm.played)
+summary(plm.played$total_earnings)
+```
+
+This looks much better. The distribution is roughly normal, slightly skewed to the left and with a long tail to the right. It's interesting to note as well that some players have negative values. This can happen if they get yellow cards, red cards or score own goals, for example.
+
+
+#### Analysis by Club
+
+If a team scores or wins, all players of that team get points. Since some clubs perform better than others throughout a season, we would expect that players playing for a strong club to have higher earnings than players from a weaker club.
+
+```{r byClubbox}
+ggplot(data = subset(plm.played, !is.na(Club)),
+       aes(x=Club, y=total_earnings)) +
+    geom_boxplot() +
+    guides(fill=FALSE)
+```
+
+It's clear that there are differences by club in this graph. Especially players from FCB and BVB seem to have a far higher median than the other clubs. Let's order the Clubs by median and look at the trendline as well as individual observations.
+
+```{r byClubLine2}
+# get clubs in order of median
+ClubbyMedian <- with(subset(plm.played, !is.na(Club)), reorder(Club, total_earnings, median))
+ggplot(aes(x = ClubbyMedian, y = total_earnings), 
+       data = subset(plm.played, !is.na(Club))) +
+  geom_point(position = position_jitter(h=0),
+             alpha = 0.3, color = "black") +
+  geom_line(aes(group = 1), stat = "summary", fun.y = mean, 
+            color = "blue", size = 2) +
+  geom_line(aes(group = 1), stat = "summary", 
+            fun.y = quantile, fun.args=list(probs=0.5), 
+            color = "red", size = 1, linetype = 2) +
+  geom_smooth(aes(group = 1), method = "lm", size = 2) +
+  ylab("Earnings") +
+  coord_cartesian(ylim = c(quantile(plm.played$total_earnings, 0.05),
+                           quantile(plm.played$total_earnings, 0.95)))
+```
+
+Sorting by median makes the trend clear that there are differences by club.
+
+By the same line of reasoning, players may be scoring higher when playing against weaker clubs. We can create a new variable 'opponent' and investigate whether there are differences in total_earnings.
+
+```{r byOpponentbox}
+# Get opponent from home/away_shortname
+plm <- transform(plm, opponent = ifelse(
+  Club == home_shortname, levels(away_shortname)[away_shortname],
+  levels(home_shortname)[home_shortname]))
+plm.played <- subset(plm, !status %in% c("bench", "not_present"))
+
+ggplot(data = subset(plm.played, !is.na(Club)),
+       aes(x=opponent, y=total_earnings)) +
+    geom_boxplot() +
+    guides(fill=FALSE)
+```
+
+We see almost a mirror image of the previous graph, with earnings against BVB and FCB being the lowest. 
+
+Let's look if it's the same trend if we plot it sorted:
+``` {r trendopponent}
+ClubbyMedian <- with(subset(plm.played, !is.na(Club)), reorder(opponent, total_earnings, median))
+
+ggplot(aes(x = ClubbyMedian, y = total_earnings), 
+       data = subset(plm.played, !is.na(Club))) +
+  geom_point(position = position_jitter(h=0),
+             alpha = 0.3, color = "black") +
+  geom_line(aes(group = 1), stat = "summary", fun.y = mean, 
+            color = "blue", size = 2) +
+  geom_line(aes(group = 1), stat = "summary", 
+            fun.y = quantile, fun.args=list(probs=0.5), 
+            color = "red", size = 1, linetype = 2) +
+  geom_smooth(aes(group = 1), method = "lm", size = 2) +
+  ylab("Earnings") +
+  coord_cartesian(ylim = c(quantile(plm.played$total_earnings, 0.05),
+                           quantile(plm.played$total_earnings, 0.95)))
+```
+
+It's not exactly the same order as before, but it's a similar trend. Most points have been earned against teams VFB, TSG, SGE, H96 and BRE. These are indeed the last 5 teams in the current Bundesliga table.
+
+#### Analysis by Position
+
+Players play in different positions and one might expect that their scope for earning points depends on their positions, i.e. a striker (ATT) is more likely to score than a goalkeeper (GOA), while only the latter gets points for a clean sheet.
+```{r byPos}
+qplot(x = total_earnings, data = plm.played,
+      binwidth = 10000,
+      color = I('black'), fill = I('#F79420')) +
+  facet_wrap(~Pos, ncol = 1)
+```
+
+Visually it looks like defenders might have the highest median as there are lots of occurences in the higher score ranges towards the right. However, it's hard to compare as the groups are of different sizes. I.e., there's only 1 GOAlkeeper per match, but several players will play in DEFense and MIDfield, and typically between 1 and 3 in ATTack positions. The histogram confirms this idea:
+
+```{r PosHist}
+qplot(x = Pos, data = plm.played)
+```
+
+Given this difference in distribution by position, let's look at the medians and compare the range with boxplots. Let's also ignore the NAs:
+
+```{r byPosbox}
+qplot(y = total_earnings, x = Pos,
+      data = subset(plm.played, !is.na(Pos),
+      binwidth = 10000),
+      color = I('black'), fill = I('#F79420'),
+      geom = 'boxplot')
+```
+
+The differences look small, but it seems indeed as if defenders and goalkeepers have higher median scores. However, the ranges are much bigger for midfielders and especially attackers. This would suggest that it may be possible to earn more points with them if selecting the right players. Let's look at actual means and medians:
+
+```{r byPossummary}
+by(plm.played$total_earnings, plm.played$Pos, summary)
+```
+
+The data somewhat confirms this suspicion. While median and mean score is lowest for attackers by far, the gap gets closer for the 3rd quartile earnings and they have the highest maximum earnings by far. Let's have a look at just the top15%.
+
+```{r byPos15%}
+plm.played %>%
+  group_by(Pos) %>%
+  summarise(quantile90 = quantile(total_earnings, probs = 0.85)) %>%
+  arrange(Pos)
+```
+
+We can see that in the top 15% range attackers have the highest earnings.
+
+
+#### Earnings by Player Value
+
+Players in the game have different values:
+```{r byValuehist}
+ggplot(data = plm.played,
+       aes(x=init_Value)) +
+    geom_histogram()
+
+summary(plm.played$init_Value)
+```
+
+We can see that player values start at 5 and go up all the way to 14. Most observations are from players in the 6.5 to 7.5 range.
+
+We would expect that more expensive players are more likely to earn a lot of points. Let's look at this relationship, excluding NAs again:
+
+```{r byValuebox}
+ggplot(data = subset(plm.played, !is.na(init_Value)),
+       aes(x=factor(init_Value), y=total_earnings, 
+           fill = factor(ceiling(init_Value)))) +
+    geom_boxplot() +
+    guides(fill=FALSE)
+```
+
+The boxplot supports this idea. The median earnings generally increase with the initial value. The highest score in the game was also achieved by a player at 13.5M. The trend is less clear at the higher end beyond 12.0. Few players are valued so high, so there are far fewer observations in this area.
+
+```{r byValueTable}
+plm.te_by_value <- plm.played %>%
+  group_by(init_Value) %>%
+  summarise(mean_earnings = mean(total_earnings),
+            median_earnings = median(total_earnings),
+            max_earnings = max(total_earnings),
+            n = n()) %>%
+  arrange(init_Value)
+
+plm.te_by_value
+```
+
+If we just look at average and median, the scales adjust and the trend is more clear.
+
+```{r byValueLine}
+ggplot(aes(x = init_Value), data = plm.te_by_value) +
+  geom_line(aes(y = mean_earnings), color = "blue") +
+  geom_line(aes(y = median_earnings), color = "red") +
+  ylab("Earnings")
+```
+The trend is clearly upwards generally, although the variance of median and average is higher at the top end, due to fewer observations leading to less accurate means/medians.
+
+#### Exploring Position and Value
+
+We saw that attackers had the lowest median earnings, but also the highest upside potential for earnings. We also saw that there was a correlation between player value and earnings. So let's look at values for different positions:
+
+```{r valPos}
+ggplot(subset(plm.played, !is.na(Pos)),
+       aes(x = init_Value)) +
+  geom_histogram() +
+  facet_wrap(~Pos, ncol = 1, scales = "free_y")
+```
+
+Given the different number of players per position we allow the y-scales to adjust to the total number. This makes the histograms more comparable. We can see that the further up a player on the pitch, the more players have higher values. That is, the most expensive players play as attackers and midfielders, and some defenders are still more expensive than the most expensive goalkeeper. This further supports the notion that the best attackers may be worth picking.
+
+#### Value for money
+
+We've established a relationship between Value and Earnings for players. Since there is a constrained budget in picking the fantasy football team, we should also investigate which players are good value for money.
+
+We'll first aggregate our dataset to the player-level. We will include all matches here, even the ones where players did not play. We will exclude players for which we don't have Values.
+
+```{r aggregate}
+plm.player <- plm %>%
+  filter(!is.na(init_Value)) %>%
+  group_by(id, Name) %>%
+  summarise(Value = mean(init_Value),
+            Total_Earnings = sum(total_earnings),
+            mean_earnings = mean(total_earnings),
+            Pos = first(Pos)) %>%
+  ungroup() %>%
+  arrange(id,Name)
+
+head(plm.player)
+```
+
+Now let's look at the distribution of players in terms of Value for Money
+```{r vfmhist}
+ggplot(plm.player, aes(x = Total_Earnings / Value)) +
+  geom_histogram(binwidth = 10000)
+```
+
+We see that we have a somewhat bell shaped distribution with the majority of values between 0 and ~200,000. There is also a long tail of observations between 200,000 and 300,000. These players can be considered bargains or value for money. Let's zoom in on them and see if we can find a pattern for them:
+
+```{r vfmbox}
+plm.vfm <- subset(plm.player, Total_Earnings / Value > 200000)
+ggplot(plm.vfm, aes(x = Value, y = Total_Earnings / Value)) +
+  geom_boxplot(aes(x = factor(Value)))
+```
+
+It is hard to really make out a trend, since there are more players in the lower value brackets and their value for money ratings are more dispersed. It's interesting to see that the highest ratio comes from a player that was worth only 5.5, but the values are all over the place and it's hard to discern a trend.
+
+Let's also check value for money by position:
+```{r vfmPos}
+ggplot(plm.vfm, aes(x = Pos, y = Total_Earnings / Value)) +
+  geom_boxplot(aes(x = factor(Pos)))
+```
+
+An interesting trend emerges looking at value for money by position. It looks like the further up the field, the higher the median value for money. 
+
+
+#### Explore individual players earnings
+
+Looking even closer at individual players, 17 matches have been played, so for each player we can have up to 17 observations.
+
+```{r byPlayer}
+# Set the seed for reproducible results
+set.seed(4230)
+sample.ids <- sample(plm.played$id, 10)
+
+
+ggplot(subset(plm, id %in% sample.ids),
+       aes(x=matchday, y=total_earnings)) +
+  facet_wrap(~Name) +
+  geom_line() 
+```
+
+We can take away two things from this graph:
+(1) Many players only played a subset of the matches (i.e. Galvez, Gulselam, Johannsson and Toljan), which again highlights the necessity to take into account the likelihood of players being played on a given matchday.
+(2) There is quite some fluctuation in the earnings of players per matchday.Players earn a significant number of points for Clean Sheets, Assists or scoring a goal. Let's look at those variables a bit closer.
+
+```{r Goals/Assists/CleanSheets}
+# Replace NAs by 0s for Goals / Assists / Clean Sheets
+plm$assist[is.na(plm.played$assist)] <- 0
+plm$goal[is.na(plm$goal)] <- 0
+plm$clean_sheet[is.na(plm$clean_sheet)] <- 0
+
+# Create new variable to sum up possible achievements
+plm <- transform(plm, sum.achievements = assist + goal + clean_sheet)
+
+# Plot graph as before, but add circles indicating achievements
+ggplot(subset(plm, id %in% sample.ids),
+       aes(x=matchday, y=total_earnings)) +
+  facet_wrap(~Name) +
+  geom_line() +
+  geom_point(aes(size = sum.achievements), pch = 1)
+```
+
+The sample supports this idea. The higher peaks are generally accompanied by a bigger point, except for Galvez and Gulselam. It's notable that these 2 players generally scored quite low, which might be due to the fact that they played less minutes on the field and so had less time to earn points. Let's explore that relationship using the game_play_duration variable, using the same visualization as before.
+
+``` {r sampleDuration}
+ggplot(subset(plm, id %in% sample.ids),
+       aes(x=matchday, y=total_earnings)) +
+  facet_wrap(~Name) +
+  geom_line() +
+  geom_point(aes(size = game_play_duration / 10), pch = 1)
+
+```
+
+Game Play Duration doesn't seem to fully explain the ups and downs. Particularly Galvez' graph still shows a lot of fluctuation even when he played lots of minutes. We saw before that he didn't earn any achievements in any of the matches, so that can't explain the fluctuations either. As we said above, players also earn points for winning a match or when their team scores, so let's add points for wins / draws / losses to the individual achievements. Using the color scale we can incorporate these achievements together with playing time.
+
+``` {r sampleWins}
+# Calculate variable for Home or Away match
+plm <- transform(plm, home_away = ifelse(Club == home_shortname,
+                                           "home", "away"))
+
+# Calculate league points (3 for Win, 1 for Draw, 0 for Loss)
+plm <- transform(plm, bl_points = ifelse(home_score == away_score, 1,
+                                        ifelse(home_away == "home" &
+                                                 home_score > away_score,
+                                               3, ifelse(
+                                                 home_away == "away" &
+                                                   home_score < away_score,
+                                                 3, 0))))
+
+ggplot(subset(plm, id %in% sample.ids),
+       aes(x=matchday, y=total_earnings)) +
+  facet_wrap(~Name) +
+  geom_line() +
+  geom_point(aes(size = game_play_duration, 
+                 fill = sum.achievements + bl_points),
+             pch = 21) +
+  scale_fill_gradientn(colours = colorRampPalette(c("blue", "red"))(5))
+
+```
+
+Adding the team achievement of a win or a draw does add more clarity to the fluctuations. We can see that higher values tend to lie in the reddish area of the colour scale, which includes individual and team achievements. Lower values are associated with the blueish area and / or less playing time. This particularly clears up the fluctuations for Galvez - despite having no individual achievements, he has higher scores when his team won.
+
+
+### Final Plots and Summary
+
+
+#### Role of the Club
+
+We first explored the role that a players' club and the opponent he is playing against played in the earnings. We can capture this idea in one graph using tiles:
+
+``` {r MatchUp}
+# Calculate matchup matrix
+plm.matchup <- plm %>%
+  filter(!is.na(Club) & game_play_duration > 0) %>%
+  group_by(Club, opponent) %>%
+  summarise(median_earnings = median(total_earnings),
+            avg_earnings = mean(total_earnings),
+            points = first(bl_points)) %>%
+  ungroup() %>%
+  arrange(Club, opponent)
+
+# Re-level to get clubs in order of total bl_points for plot
+plm.sorted <- aggregate(points ~ Club, plm.matchup, sum)
+
+plm.matchup$Club <- factor(plm.matchup$Club,
+                      levels = plm.sort[order(plm.sort$points), "Club"])
+plm.matchup$opponent <- factor(plm.matchup$opponent,
+                      levels = plm.sort[order(plm.sort$points), "Club"])
+
+
+ggplot(plm.matchup, aes(x = Club, y = opponent, fill = avg_earnings)) +
+  geom_tile() +
+  scale_fill_gradientn(colours = colorRampPalette(c("blue", "red"))(100)) +
+  labs(x = "Players' Club", y = "Opponent in a match",
+       title = "Average player earnings by match",
+       fill = "Average Earnings")
+```
+
+In this plot, the teams are listed on the x-axis ordered by their current league table standings (via total points). Opponents are listed on the y-axis in the same order. As the plot is clearly more red towards the bottom right corner and more blue towards the top left, this visualizes the point that the stronger a team and the weaker their opponent, the more points players will earn on average.
+
+This highlights the importance of looking at matchups when selecting players for a team and preferring players from clubs that play a team much lower in the table.
+
+
+#### Role of Player Value
+
+We already saw a positive trend for player value and earnings. In the follwing visualization we'll add the individual observations as scatterplot and overlay it with a smoother. We'll exclude outliers from the graph to emphasize the relationship. We'll also round the values to full millions to reduce variance at the top: 
+
+```{r byValueLine2}
+ggplot(aes(x = ceiling(init_Value), y = total_earnings),
+       data = plm.played) +
+  geom_point(position = position_jitter(h=0), alpha = 0.5) +
+  geom_line(stat = "summary", fun.y = mean, color = "blue", size = 1) +
+  geom_smooth(method = "lm") +
+  labs(x = "Player Value (Millions)", y = "Player Earnings per match",
+       title = "Player Value and median Earnings") +
+  coord_cartesian(ylim = c(quantile(plm.played$total_earnings, 0.05),
+                           quantile(plm.played$total_earnings, 0.95)))
+```
+
+This visualization really drives home two points:
+
+1. Most players are valued 7.5M or less (density of points)
+2. The higher a players' value, the higher the median earnings
+
+The smoother line further suggests a correlation. We can run a formal test of correlation:
+
+```{r Value Earnings correlation}
+with(plm.played, cor.test(init_Value, total_earnings))
+```
+
+The p-value of <2.2e-16 confirms that the true correlation is not equal to 0. We estimate it to be 0.296.
+
+
+#### Role of individual and club achievements per match
+
+We saw in the individual analysis the role of game_play_duration, individual achievements and club-level achievements in explaining variance in earnings-point per player. Beyond looking at the sample, we'll look at all players to see if this holds true.
+
+``` {r extrapolation1}
+# Calculate rank variable to sort players by average earnings
+plm.player$rank <- rank(-plm.player$mean_earnings)
+
+# Merge with data at match-level
+plm.ranked <- merge(plm.player, plm, by = "id")
+
+ggplot(subset(plm.ranked, !is.na(sum.achievements)),
+       aes(x=rank, y=total_earnings)) +
+  geom_point(aes(alpha = game_play_duration, 
+                 fill = sum.achievements + bl_points),
+             pch = 21) +
+  scale_fill_gradientn(colours = colorRampPalette(c("purple", "red"))(5)) +
+  geom_line(aes(color = "blue"), stat = 'summary', fun.y = mean) +
+  scale_y_sqrt() +
+  labs(x="Player Rank (by average earnings)", 
+       y="Earnings per match (sqrt scale)",
+       title="Match achievements and Player Earnings",
+       fill="Number of match achievements",
+       color = "Average Earnings per match",
+       alpha="Percentage of minutes played")
+```
+
+This visualization really drives home three points:
+
+1. There is significant variance within any individual players earnings (y-scale range per x-value)
+2. Match achievements highly correlate with player earnings (more red at upper end of the y-scale)
+3. Players with high average earnings play more often and more minutes (higher density for players with higher ranks)
+
+
+### Reflection
+The data set contains information on 598 Bundesliga players for 17 matches of the currently ongoing season, aggregating to a total of 10,166 observations. As I am playing fantasy football on playlivemanager.com, I was interested in getting a better understanding of players' earnings with the eventual aim to develop a model to predict earnings. 
+
+I started by understanding the distribution of earnings in the data set and immediately found many 0 values. This highlighted that only a subset of players would actually play on a given matchday and highlighted the importance of exploring the relationship of earnings with other variables. Interesting questions and leads opened up as I continued to make observations on plots, such as around Clubs, Positions and Player Value. I explored earnings of players across these variables and got some meaningful insights towards building a strong team in fantasy football: for example, the high amount of players not playing suggests we need to build a model to predict the probability of playing time and include that in a model to predict earnings. The value for money analysis suggested it could be beneficial to play with formations that use more attackers and less defenders. There were also correlations between player values and player clubs and opponents and their earnings.
+
+I then also explored individual players' performance over several matches and was surprised by the huge variance of earnings here. The plots suggest that the variance could be explained by individual achievements, team achievements and playing time to a certain extent. Unfortunately those are hard if not impossible to predict in advance. I therefore expect that a prediction model will only account for some part of the variance. Fortunately there were good indications that the combination of a players' club and its opponent on a given matchday, as well as a players' value correlated with earnings. My aim is to explore this further and then build a linear optimization model to optimize expected earnings subject to buying 11 players at their respective values.
