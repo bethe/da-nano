@@ -13,7 +13,13 @@ Data has been gathered in JSON format via the API, i.e. at http://www.playlivema
 This data analysis explores drivers for 'total_earnings', which is the objective to maximize in the fantasy football game.
 
 
-#### Loading Data & Libraries
+#### Loading Data, libraries and global settings
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
+echo=FALSE, warning=FALSE, message=FALSE)
+
+```
 
 ```{r Load Data & Libraries}
 suppressMessages(library("ggplot2"))
@@ -45,7 +51,13 @@ qplot(x = total_earnings, data = plm,
   scale_x_continuous(limits = c(-10000,10000))
 ```
 
-Indeed, it looks like players who are 'not_present' or on the 'bench' are almost solely responsible for the many obersvations with 0 earnings. This highlights the importance of picking players that are likely to play. In terms of analyzing the effect of other variables, these observations can be confounding, so we will take them out from here on onwards.
+Indeed, it looks like players who are 'not_present' or on the 'bench' are almost solely responsible for the many obersvations with 0 earnings. Let's check status for just the 0 values:
+
+``` {r status bargraph}
+qplot(x = status,data = subset(plm, plm$total_earnings == 0))
+```
+
+This highlights the importance of picking players that are likely to play. In terms of analyzing the effect of other variables, these observations can be confounding, so we will take them out from here on onwards.
 
 
 Let's look at the plot again excluding players on the bench or not present.
@@ -283,7 +295,7 @@ ggplot(plm.vfm, aes(x = Pos, y = Total_Earnings / Value)) +
 An interesting trend emerges looking at value for money by position. It looks like the further up the field (ATT, MID), the higher the median value for money. 
 
 
-#### Explore individual players earnings
+#### Explore individual player earnings
 
 Looking even closer at individual players, 17 matches have been played, so for each player we can have up to 17 observations.
 
@@ -301,8 +313,22 @@ ggplot(subset(plm, id %in% sample.ids),
 
 We can take away two things from this graph:
 
-1. Many players only played a subset of the matches (i.e. Galvez, Gulselam, Johannsson and Toljan), which again highlights the necessity to take into account the likelihood of players being played on a given matchday.
-2. There is quite some fluctuation in the earnings of players per matchday.Players earn a significant number of points for Clean Sheets, Assists or scoring a goal. Let's look at those variables a bit closer.
+1. Many players only played a subset of the matches (i.e. Galvez, Gulselam, Johannsson and Toljan). 
+2. There is quite some fluctuation in the earnings of players per matchday.
+Let's have a look first at how many matches a player played:
+
+```{r playerobservations}
+plm.matchcount <- plm.played %>%
+  group_by(id) %>%
+  summarize(n = n()) %>%
+  arrange(id)
+
+qplot(x=factor(n), data = plm.matchcount)
+```
+
+It's interesting to see that the distribution is generally skewed to the right with a significant number of players having played in all 17 matches and lots of players with 13 matches or more. This is in line with the idea of being a "regular starter" and should help in predicting the probability of a player playing in a particular match. It's also interesting to see that a relatively high number of players played only 1  match. Possibly these are fringe players given a chance in a match, but they failed to convince the coach.
+
+Let's now look at what could explain the variations in earnings for when players actually played. Players earn a significant number of points for Clean Sheets, Assists or scoring a goal. Let's look at those variables a bit closer.
 
 ```{r Goals/Assists/CleanSheets}
 # Replace NAs by 0s for Goals / Assists / Clean Sheets
@@ -313,6 +339,21 @@ plm$clean_sheet[is.na(plm$clean_sheet)] <- 0
 # Create new variable to sum up possible achievements
 plm <- transform(plm, sum.achievements = assist + goal + clean_sheet)
 
+# Plot histogram of achievements
+qplot(x=factor(sum.achievements), data = plm)
+```
+
+We can see that most players have 0 achievements on a given match. This is hardly surprising given that we already saw that most players won't even play. From there on, it looks like the scale is decreasing exponentially. Let's have a look by using a log scale:
+``` {r histAchivementsSqrd}
+qplot(x=factor(sum.achievements), data = plm) +
+  scale_y_log10()
+```
+
+It looks indeed like there's an exponential decrease in the number of achievements a player can get in an individual match. There are also a high number of NAs, these come from players that have never played a match and we'll ignore them going forward.
+
+Turning back to our sample, let's have a look in how far achievements might explain variations in player earnings:
+
+``` {r sampleAchievements}
 # Plot graph as before, but add circles indicating achievements
 ggplot(subset(plm, id %in% sample.ids),
        aes(x=matchday, y=total_earnings)) +
@@ -321,7 +362,16 @@ ggplot(subset(plm, id %in% sample.ids),
   geom_point(aes(size = sum.achievements), pch = 1)
 ```
 
-The sample supports this idea. The higher peaks are generally accompanied by a bigger point, except for Galvez and Gulselam. It's notable that these 2 players generally scored quite low, which might be due to the fact that they played less minutes on the field and so had less time to earn points. Let's explore that relationship using the game_play_duration variable, using the same visualization as before.
+The sample supports this idea. The higher peaks are generally accompanied by a bigger point, except for Galvez and Gulselam. It's notable that these 2 players generally scored quite low, which might be due to the fact that they played less minutes on the field and so had less time to earn points. Let's first look at the distribution of game_play_duration.
+
+
+``` {r DurationHist}
+qplot(x=game_play_duration, data=subset(plm, id %in% sample.ids))
+```
+
+Looking at the distribution, it looks strongly U-shaped with bick peaks at 0 and 90 minutes. That is because in a given match there are only 3 substitutions allowed per team, so at least 8 of 11 players will play the full 90 minutes. Similarly, there are typically 8 players on the bench and at least 5 of these 8 players will not get to play at all. In the range in between, we can see that substitutions are usually starting around 60 minutes with the highest value around the 80 minute mark.
+
+Now let's explore that relationship using the game_play_duration variable, using the same visualization as before.
 
 ``` {r sampleDuration}
 ggplot(subset(plm, id %in% sample.ids),
@@ -332,9 +382,10 @@ ggplot(subset(plm, id %in% sample.ids),
 
 ```
 
-Game Play Duration doesn't seem to fully explain the ups and downs. Particularly Galvez' graph still shows a lot of fluctuation even when he played lots of minutes. We saw before that he didn't earn any achievements in any of the matches, so that can't explain the fluctuations either. As we said above, players also earn points for winning a match or when their team scores, so let's add points for wins / draws / losses to the individual achievements. Using the color scale we can incorporate these achievements together with playing time.
+Game Play Duration doesn't seem to fully explain the ups and downs. Particularly Galvez' graph still shows a lot of fluctuation even when he played lots of minutes. We saw before that he didn't earn any achievements in any of the matches, so that can't explain the fluctuations either. As we said above, players also earn points for winning a match or when their team scores, so let's add points for wins / draws / losses to the individual achievements. 
 
-``` {r sampleWins}
+Again, let's first look at the distribution:
+``` {r histAchievements2}
 # Calculate variable for Home or Away match
 plm <- transform(plm, home_away = ifelse(Club == home_shortname,
                                            "home", "away"))
@@ -347,7 +398,14 @@ plm <- transform(plm, bl_points = ifelse(home_score == away_score, 1,
                                                  home_away == "away" &
                                                    home_score < away_score,
                                                  3, 0))))
+qplot(x=factor(sum.achievements + bl_points), data = plm)
+```
 
+Comparing this distribution to the previous one it stands out that there are a clearly more observations at the 1 point and the 3 point level. These for the most part should be players that had 0 individual achievements, but got 1 point for a draw or 3 points for a victory as team achievements. The relatively high amount of 4 points can also be explained by players having one individual achievement and their team winning a match. Given that individual achievements are assists, goals or a clean sheet, those increase the likelihood of a match being won.
+
+Using the color scale we will now incorporate these achievements together with playing time into the sample analysis we did before:
+
+``` {r sampleWins}
 ggplot(subset(plm, id %in% sample.ids),
        aes(x=matchday, y=total_earnings)) +
   facet_wrap(~Name) +
@@ -391,13 +449,13 @@ plm.matchup$opponent <- factor(plm.matchup$opponent,
 
 ggplot(plm.matchup, aes(x = Club, y = opponent, fill = avg_earnings)) +
   geom_tile() +
-  scale_fill_gradientn(colours = colorRampPalette(c("blue", "red"))(100)) +
+  scale_fill_distiller(direction = 1) +
   labs(x = "Players' Club", y = "Opponent in a match",
        title = "Average player earnings by match",
        fill = "Average Earnings")
 ```
 
-In this plot, the teams are listed on the x-axis ordered by their current league table standings (via total points). Opponents are listed on the y-axis in the same order. As the plot is clearly more red towards the bottom right corner and more blue towards the top left, this visualizes the point that the stronger a team and the weaker their opponent, the more points players will earn on average.
+In this plot, the teams are listed on the x-axis ordered by their current league table standings (via total points). Opponents are listed on the y-axis in the same order. As the plot is clearly darker towards the bottom right corner and brighter towards the top left, this visualizes the point that the stronger a team and the weaker their opponent, the more points players will earn on average.
 
 This highlights the importance of looking at matchups when selecting players for a team and preferring players from clubs that play a team much lower in the table.
 
@@ -434,7 +492,7 @@ The p-value of <2.2e-16 confirms that the true correlation is not equal to 0. We
 
 #### Role of individual and club achievements per match
 
-We saw in the individual analysis the role of game_play_duration, individual achievements and club-level achievements in explaining variance in earnings-point per player. Beyond looking at the sample, we'll look at all players to see if this holds true.
+We saw in the individual analysis the role that individual and club-level achievements played in explaining variance in earnings per player. Beyond looking at the small sample, we'll look at all players to see if this holds true.
 
 ``` {r extrapolation1}
 # Calculate rank variable to sort players by average earnings
@@ -445,25 +503,24 @@ plm.ranked <- merge(plm.player, plm, by = "id")
 
 ggplot(subset(plm.ranked, !is.na(sum.achievements)),
        aes(x=rank, y=total_earnings)) +
-  geom_point(aes(alpha = game_play_duration, 
-                 fill = sum.achievements + bl_points),
-             pch = 21) +
-  scale_fill_gradientn(colours = colorRampPalette(c("purple", "red"))(5)) +
+  geom_point(aes(color = sum.achievements + bl_points),
+                 alpha = 0.8) +
+  scale_color_distiller(direction = 1) +
+  #  scale_colour_brewer() +  
   geom_line(stat = 'summary', fun.y = mean) +
   scale_y_sqrt() +
   labs(x="Player Rank (by average earnings)", 
        y="Earnings per match (sqrt scale)",
        title="Match achievements and Player Earnings",
        fill="Number of match achievements",
-       color = "Average Earnings per match",
-       alpha="Percentage of minutes played")
+       color = "Average Earnings per match")
 ```
 
 This visualization really drives home three points:
 
 1. There is significant variance within any individual players earnings (y-scale range per x-value)
 2. Match achievements highly correlate with player earnings (more red at upper end of the y-scale)
-3. Players with high average earnings play more often and more minutes (higher density for players with higher ranks)
+3. Players with high average earnings play more often (higher density for players with higher ranks)
 
 
 ### Reflection
