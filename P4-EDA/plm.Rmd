@@ -449,9 +449,7 @@ ggplot(subset(plm.ranked, !is.na(sum.achievements)),
                  fill = sum.achievements + bl_points),
              pch = 21) +
   scale_fill_gradientn(colours = colorRampPalette(c("purple", "red"))(5)) +
-  stat_summary(fun.y=mean, geom="line", size=1.1, aes(size = "Average")) +
-
-  #  geom_line(stat = 'summary', fun.y = mean) +
+  geom_line(stat = 'summary', fun.y = mean) +
   scale_y_sqrt() +
   labs(x="Player Rank (by average earnings)", 
        y="Earnings per match (sqrt scale)",
