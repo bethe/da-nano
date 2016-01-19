@@ -132,6 +132,7 @@ It's not exactly the same order as before, but it's a similar trend. Most points
 #### Analysis by Position
 
 Players play in different positions and one might expect that their scope for earning points depends on their positions, i.e. a striker (ATT) is more likely to score than a goalkeeper (GOA), while only the latter gets points for a clean sheet.
+
 ```{r byPos}
 qplot(x = total_earnings, data = plm.played,
       binwidth = 10000,
@@ -176,6 +177,7 @@ We can see that in the top 15% range attackers have the highest earnings.
 #### Earnings by Player Value
 
 Players in the game have different values:
+
 ```{r byValuehist}
 ggplot(data = plm.played,
        aes(x=init_Value)) +
@@ -210,7 +212,7 @@ plm.te_by_value <- plm.played %>%
 plm.te_by_value
 ```
 
-If we just look at average and median, the scales adjust and the trend is more clear.
+If we just look at average and median earnings, the total range of values is smaller and the trend is more clear:
 
 ```{r byValueLine}
 ggplot(aes(x = init_Value), data = plm.te_by_value) +
@@ -218,6 +220,7 @@ ggplot(aes(x = init_Value), data = plm.te_by_value) +
   geom_line(aes(y = median_earnings), color = "red") +
   ylab("Earnings")
 ```
+
 The trend is clearly upwards generally, although the variance of median and average is higher at the top end, due to fewer observations leading to less accurate means/medians.
 
 #### Exploring Position and Value
@@ -254,6 +257,7 @@ head(plm.player)
 ```
 
 Now let's look at the distribution of players in terms of Value for Money
+
 ```{r vfmhist}
 ggplot(plm.player, aes(x = Total_Earnings / Value)) +
   geom_histogram(binwidth = 10000)
@@ -270,12 +274,13 @@ ggplot(plm.vfm, aes(x = Value, y = Total_Earnings / Value)) +
 It is hard to really make out a trend, since there are more players in the lower value brackets and their value for money ratings are more dispersed. It's interesting to see that the highest ratio comes from a player that was worth only 5.5, but the values are all over the place and it's hard to discern a trend.
 
 Let's also check value for money by position:
+
 ```{r vfmPos}
 ggplot(plm.vfm, aes(x = Pos, y = Total_Earnings / Value)) +
   geom_boxplot(aes(x = factor(Pos)))
 ```
 
-An interesting trend emerges looking at value for money by position. It looks like the further up the field, the higher the median value for money. 
+An interesting trend emerges looking at value for money by position. It looks like the further up the field (ATT, MID), the higher the median value for money. 
 
 
 #### Explore individual players earnings
@@ -295,8 +300,9 @@ ggplot(subset(plm, id %in% sample.ids),
 ```
 
 We can take away two things from this graph:
-(1) Many players only played a subset of the matches (i.e. Galvez, Gulselam, Johannsson and Toljan), which again highlights the necessity to take into account the likelihood of players being played on a given matchday.
-(2) There is quite some fluctuation in the earnings of players per matchday.Players earn a significant number of points for Clean Sheets, Assists or scoring a goal. Let's look at those variables a bit closer.
+
+1. Many players only played a subset of the matches (i.e. Galvez, Gulselam, Johannsson and Toljan), which again highlights the necessity to take into account the likelihood of players being played on a given matchday.
+2. There is quite some fluctuation in the earnings of players per matchday.Players earn a significant number of points for Clean Sheets, Assists or scoring a goal. Let's look at those variables a bit closer.
 
 ```{r Goals/Assists/CleanSheets}
 # Replace NAs by 0s for Goals / Assists / Clean Sheets
@@ -443,7 +449,9 @@ ggplot(subset(plm.ranked, !is.na(sum.achievements)),
                  fill = sum.achievements + bl_points),
              pch = 21) +
   scale_fill_gradientn(colours = colorRampPalette(c("purple", "red"))(5)) +
-  geom_line(aes(color = "blue"), stat = 'summary', fun.y = mean) +
+  stat_summary(fun.y=mean, geom="line", size=1.1, aes(size = "Average")) +
+
+  #  geom_line(stat = 'summary', fun.y = mean) +
   scale_y_sqrt() +
   labs(x="Player Rank (by average earnings)", 
        y="Earnings per match (sqrt scale)",
