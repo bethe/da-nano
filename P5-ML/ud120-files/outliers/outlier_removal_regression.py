@@ -1,3 +1,5 @@
+# coding: utf-8
+# %load "../ud120-files/outliers/outlier_removal_regression.py"
 #!/usr/bin/python
 
 import random
@@ -9,8 +11,8 @@ from outlier_cleaner import outlierCleaner
 
 
 ### load up some practice data with outliers in it
-ages = pickle.load( open("practice_outliers_ages.pkl", "r") )
-net_worths = pickle.load( open("practice_outliers_net_worths.pkl", "r") )
+ages = pickle.load( open("../ud120-files/outliers/practice_outliers_ages.pkl", "r") )
+net_worths = pickle.load( open("../ud120-files/outliers/practice_outliers_net_worths.pkl", "r") )
 
 
 
@@ -25,16 +27,9 @@ ages_train, ages_test, net_worths_train, net_worths_test = train_test_split(ages
 
 ### fill in a regression here!  Name the regression object reg so that
 ### the plotting code below works, and you can see what your regression looks like
-
-
-
-
-
-
-
-
-
-
+from sklearn import linear_model
+reg = linear_model.LinearRegression()
+reg.fit(ages_train, net_worths_train)
 
 try:
     plt.plot(ages, reg.predict(ages), color="blue")
@@ -43,7 +38,11 @@ except NameError:
 plt.scatter(ages, net_worths)
 plt.show()
 
+# Print out some statistics
+print "Slope is", reg.coef_[0]
+print "Score is", reg.score(ages_test, net_worths_test)
 
+print "Remove 10% Outliers:"
 ### identify and remove the most outlier-y points
 cleaned_data = []
 try:
@@ -55,10 +54,6 @@ except NameError:
 
 
 
-
-
-
-
 ### only run this code if cleaned_data is returning data
 if len(cleaned_data) > 0:
     ages, net_worths, errors = zip(*cleaned_data)
@@ -67,8 +62,9 @@ if len(cleaned_data) > 0:
 
     ### refit your cleaned data!
     try:
-        reg.fit(ages, net_worths)
+        reg = reg.fit(ages, net_worths)
         plt.plot(ages, reg.predict(ages), color="blue")
+
     except NameError:
         print "you don't seem to have regression imported/created,"
         print "   or else your regression object isn't named reg"
@@ -82,3 +78,8 @@ if len(cleaned_data) > 0:
 else:
     print "outlierCleaner() is returning an empty list, no refitting to be done"
 
+### Print new statistics
+print "New slope is", reg.coef_[0]
+print "New score is", reg.score(ages_test, net_worths_test)
+
+get_ipython().magic(u'save "../ud120-files/outliers/outlier_removal_regression.py"')
