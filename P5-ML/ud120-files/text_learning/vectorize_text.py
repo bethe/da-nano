@@ -1,3 +1,5 @@
+# coding: utf-8
+# %load "../ud120-files/text_learning/vectorize_text.py"
 #!/usr/bin/python
 
 import os
@@ -5,7 +7,7 @@ import pickle
 import re
 import sys
 
-sys.path.append( "../tools/" )
+sys.path.append( "../ud120-files/text_learning/" )
 from parse_out_email_text import parseOutText
 
 """
@@ -23,8 +25,8 @@ from parse_out_email_text import parseOutText
 """
 
 
-from_sara  = open("from_sara.txt", "r")
-from_chris = open("from_chris.txt", "r")
+from_sara  = open("../ud120-files/text_learning/from_sara.txt", "r")
+from_chris = open("../ud120-files/text_learning/from_chris.txt", "r")
 
 from_data = []
 word_data = []
@@ -41,21 +43,26 @@ for name, from_person in [("sara", from_sara), ("chris", from_chris)]:
     for path in from_person:
         ### only look at first 200 emails when developing
         ### once everything is working, remove this line to run over full dataset
-        temp_counter += 1
+        ### temp_counter += 1
         if temp_counter < 200:
             path = os.path.join('..', path[:-1])
-            print path
+            #print path
             email = open(path, "r")
 
             ### use parseOutText to extract the text from the opened email
-
+            extract = parseOutText(email)
             ### use str.replace() to remove any instances of the words
             ### ["sara", "shackleton", "chris", "germani"]
-
+            identifier_words = ["sara", "shackleton", "chris", "germani"]
+            for i in identifier_words:
+                extract = extract.replace(i, "")
             ### append the text to word_data
-
+            word_data.append(extract)
             ### append a 0 to from_data if email is from Sara, and 1 if email is from Chris
-
+            if name == "sara":
+                from_data.append(0)
+            else:
+                from_data.append(1)
 
             email.close()
 
@@ -67,9 +74,10 @@ pickle.dump( word_data, open("your_word_data.pkl", "w") )
 pickle.dump( from_data, open("your_email_authors.pkl", "w") )
 
 
-
-
-
 ### in Part 4, do TfIdf vectorization here
+from sklearn.feature_extraction.text import TfidfVectorizer
+vectorizer = TfidfVectorizer(stop_words = "english", min_df=1)
+vectorizer.fit_transform(word_data)
+print len(vectorizer.get_feature_names())
 
-
+#%save "../ud120-files/text_learning/vectorize_text.py" 38
