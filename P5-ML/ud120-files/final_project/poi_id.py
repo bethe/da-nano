@@ -10,30 +10,43 @@ from tester import dump_classifier_and_data
 ### Task 1: Select what features you'll use.
 ### features_list is a list of strings, each of which is a feature name.
 ### The first feature must be "poi".
-features_list = ['poi','salary'] # You will need to use more features
+features_list = ['poi', 'salary', 'bonus', 'to_poi_ratio', 'total_stock_value', 'exercised_stock_options'] # See 'Final Project.ipynb'
 
 ### Load the dictionary containing the dataset
 with open("final_project_dataset.pkl", "r") as data_file:
     data_dict = pickle.load(data_file)
 
 ### Task 2: Remove outliers
+data_dict.pop('TOTAL')
+
 ### Task 3: Create new feature(s)
 ### Store to my_dataset for easy export below.
 my_dataset = data_dict
+for name in data_dict:
+    try:
+        my_dataset[name]['from_poi_ratio'] = float(data_dict[name]['from_poi_to_this_person']) / data_dict[name]['to_messages']
+    except:
+        my_dataset[name]['from_poi_ratio'] = 0
+    try:
+        my_dataset[name]['to_poi_ratio'] = float(data_dict[name]['from_this_person_to_poi']) / data_dict[name]['from_messages']
+    except:
+        my_dataset[name]['to_poi_ratio'] = 0
 
 ### Extract features and labels from dataset for local testing
 data = featureFormat(my_dataset, features_list, sort_keys = True)
 labels, features = targetFeatureSplit(data)
 
-### Task 4: Try a varity of classifiers
+### Task 4: Try a variety of classifiers
 ### Please name your classifier clf for easy export below.
 ### Note that if you want to do PCA or other multi-stage operations,
 ### you'll need to use Pipelines. For more info:
 ### http://scikit-learn.org/stable/modules/pipeline.html
 
-# Provided to give you a starting point. Try a variety of classifiers.
-from sklearn.naive_bayes import GaussianNB
-clf = GaussianNB()
+from sklearn.ensemble import RandomForestClassifier
+clf = RandomForestClassifier()
+clf = clf.fit(features, labels)
+# See 'Final Project.ipynb for other Classifiers tested
+
 
 ### Task 5: Tune your classifier to achieve better than .3 precision and recall 
 ### using our testing script. Check the tester.py script in the final project
@@ -46,6 +59,10 @@ clf = GaussianNB()
 from sklearn.cross_validation import train_test_split
 features_train, features_test, labels_train, labels_test = \
     train_test_split(features, labels, test_size=0.3, random_state=42)
+
+clf = RandomForestClassifier(n_estimators = 25, min_samples_split = 41, class_weight = "balanced_subsample")
+clf = clf.fit(features_train, labels_train)
+
 
 ### Task 6: Dump your classifier, dataset, and features_list so anyone can
 ### check your results. You do not need to change anything below, but make sure
