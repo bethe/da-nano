@@ -1,0 +1,160 @@
+#### References to resources used
+
+# STACK OVERFLOW
+
+Feb 10, 2016
+Error converting Ipython Notebook - Stack Overflow
+stackoverflow.com
+
+
+Feb 10, 2016
+running pandoc from python returns error when run from web but not when run from console - Stack Overflow
+stackoverflow.com
+
+
+Feb 10, 2016
+pandoc - Can't convert ipython notebook using Anaconda on Windows - Stack Overflow
+stackoverflow.com
+
+
+Feb 10, 2016
+random forest - results of consecutive randomForest.predict calls in R are inconsistent - Stack Overflow
+stackoverflow.com
+
+
+Feb 10, 2016
+in python: iterate over each string in a list - Stack Overflow
+stackoverflow.com
+
+
+Feb 10, 2016
+python - Finding the average of a list - Stack Overflow
+stackoverflow.com
+
+
+Feb 10, 2016
+printing - Suppress calls to print (python) - Stack Overflow
+stackoverflow.com
+
+
+Feb 10, 2016
+suppressing print as stdout python - Stack Overflow
+stackoverflow.com
+
+
+Feb 10, 2016
+Python - use list as function parameters - Stack Overflow
+stackoverflow.com
+
+
+Feb 9, 2016
+Add key to a dictionary in Python? - Stack Overflow
+stackoverflow.com
+
+
+Feb 9, 2016
+python - Extracting specific columns in numpy array - Stack Overflow
+stackoverflow.com
+
+
+Feb 9, 2016
+data.frame - Dictionary style replace multiple items in R - Stack Overflow
+stackoverflow.com
+
+
+Feb 9, 2016
+Using awk to print characters of specific index on a line - Stack Overflow
+stackoverflow.com
+
+
+Feb 9, 2016
+Python json.loads shows ValueError: Extra data - Stack Overflow
+stackoverflow.com
+
+
+Feb 9, 2016
+math - How to check for NaN in python? - Stack Overflow
+stackoverflow.com
+
+
+# Other
+
+Feb 10, 2016
+1.13. Feature selection â scikit-learn 0.17 documentation
+scikit-learn.org
+
+
+Feb 10, 2016
+3.2.4.3.1. sklearn.ensemble.RandomForestClassifier â scikit-learn 0.17 documentation
+scikit-learn.org
+
+
+Feb 10, 2016
+sklearn.metrics.precision_score â scikit-learn 0.17 documentation
+scikit-learn.org
+
+
+Feb 10, 2016
+API Reference â scikit-learn 0.17 documentation
+scikit-learn.org
+
+
+Feb 10, 2016
+sklearn.metrics.precision_recall_curve â scikit-learn 0.17 documentation
+scikit-learn.org
+
+
+Feb 10, 2016
+sklearn.metrics.confusion_matrix â scikit-learn 0.17 documentation
+scikit-learn.org
+
+
+Feb 9, 2016
+Nullege: A Search Engine for Python source code
+nullege.com
+
+
+Feb 9, 2016
+sklearn.feature_selection.SelectFpr â scikit-learn 0.17 documentation
+scikit-learn.org
+
+
+Feb 9, 2016
+1.13. Feature selection â scikit-learn 0.17 documentation
+scikit-learn.org
+
+
+Feb 9, 2016
+sklearn.feature_selection.SelectFdr â scikit-learn 0.17 documentation
+scikit-learn.org
+
+
+Feb 9, 2016
+1.13. Feature selection â scikit-learn 0.17 documentation
+scikit-learn.org
+
+
+Feb 9, 2016
+scikit-learn: machine learning in Python â scikit-learn 0.17 documentation
+scikit-learn.org
+
+
+Feb 9, 2016
+sklearn.feature_extraction.text.TfidfVectorizer â scikit-learn 0.17 documentation
+scikit-learn.org
+
+
+Feb 9, 2016
+PCA with scikit-learn | Data Science, Python, Games
+napitupulu-jon.appspot.com
+
+
+Feb 8, 2016
+Supervised learning: predicting an output variable from high-dimensional observations â scikit-learn 0.17 documentation
+scikit-learn.org
+
+
+Feb 8, 2016
+Supervised learning: predicting an output variable from high-dimensional observations â scikit-learn 0.17 documentation
+scikit-learn.org
+
