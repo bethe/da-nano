@@ -1,6 +1,22 @@
 
 # Udacity: Intro to Machine Learning - Final Project
 
+### Introduction 
+
+In this project we'll use Machine Learning to identify persons of interest (POIs) in the Enron case of the early 2000s.
+
+Enron was one of the largest companies in the United States. By 2002, it had collapsed into bankruptcy due to widespread corporate fraud. In the resulting Federal investigation, there was a significant amount of typically confidential information entered into public record, including tens of thousands of emails and detailed financial data for top executives.
+
+The sheer size of the data set makes it very cumbersome for humans to analyze, however given that the data is available in a digital format it lends itself well to be analyzed using Machine Learning techniques. This report documents the machine learning techniques used in building a POI identifier.
+
+There are four major steps in my project:
+
+1. Understanding the Dataset and Questions
+2. Feature Engineering and Selection
+3. Algorithm Selection
+4. Tuning & Evaluation
+5. Cross-Validation
+
 
 ```python
 import math
@@ -19,22 +35,7 @@ with open("final_project_dataset.pkl", "r") as data_file:
     data_dict = pickle.load(data_file)
 ```
 
-### Introduction 
-
-In this project we'll use Machine Learning to identify persons of interest (POIs) in the Enron case of the early 2000s.
-
-Enron was one of the largest companies in the United States. By 2002, it had collapsed into bankruptcy due to widespread corporate fraud. In the resulting Federal investigation, there was a significant amount of typically confidential information entered into public record, including tens of thousands of emails and detailed financial data for top executives.
-
-The sheer size of the data set makes it very cumbersome for humans to analyze, however given that the data is available in a digital format it lends itself well to be analyzed using Machine Learning techniques. This report documents the machine learning techniques used in building a POI identifier.
-
-There are four major steps in my project:
-
-1. Data & Questions
-2. Feature Selection
-3. Algorithm Selection
-4. Tuning & Validation
-
-### 1 Data Exploration
+### 1 Understanding the Dataset and Questions
 
 #### 1.1 Initial investigation
 
@@ -116,19 +117,6 @@ print nan_dict
 features = ["poi", "salary", "bonus"]
 data = featureFormat(data_dict, features)
 
-
-### write function for plot
-def dot_plot(data, features):
-    for point in data:
-        x_axis = point[1]
-        y_axis = point[2]
-        plt.scatter( x_axis, y_axis )
-        if point[0] == 1:
-            plt.scatter(x_axis, y_axis, color="r", marker="*")
-    
-    plt.xlabel(features[1])
-    plt.ylabel(features[2])
-    plt.show()
 dot_plot(data, features)
 ```
 
@@ -138,19 +126,6 @@ dot_plot(data, features)
 
 
 ```python
-## Identify outlier(s)
-def outliers(feature, n):
-    outliers = []
-    data = featureFormat(data_dict, features)
-    for key in data_dict:
-        val = data_dict[key][feature]
-        if val == 'NaN':
-            continue
-        outliers.append((key,int(val)))
-    
-    max_outliers = sorted(outliers,key=lambda x:x[1],reverse=True)[:n]
-    return max_outliers
-    
 print outliers('salary', 1)
 ```
 
@@ -200,9 +175,9 @@ print outliers('bonus', 3)
     [('LAVORATO JOHN J', 8000000), ('LAY KENNETH L', 7000000), ('SKILLING JEFFREY K', 5600000)]
 
 
-These datapoints pertain to people high up in the organisation and charged with fraud, so it sounds plausible that they had significantly higher salaries / bonuses. We will leave the data unchanged.
+These datapoints pertain to people high up in the organisation, so it sounds plausible that they had significantly higher salaries / bonuses. Several of them are POIs, so we will leave the data unchanged as it seems a good indicator
 
-### 2 Feature Selection
+### 2 Feature Engineering and Selection
 
 #### 2.1 Feature Creation
 
@@ -264,9 +239,9 @@ dot_plot(data, features)
 
 This looks better; the correlation between the variables seems clearer and the POIs are closer together and easier to identify.
 
-#### 2.2 Feature Reduction
+#### 2.2 Feature Selection
 
-Given the skewed nature of the dataset (18 positives, 128 negatives) we will select a feature reduction method based on reducing false positives, SelectFpr. We will start using all available features and then subtract step by step.
+Given the skewed nature of the dataset (18 positives, 128 negatives) we will use a feature selection method based on reducing false detection, SelectFdr. We will start using all available features - including to_poi_ratio and from_poi_ratio and only keep the ones that are most useful.
 
 
 ```python
@@ -278,20 +253,30 @@ data = featureFormat(my_dataset, features_list)
 labels, features = targetFeatureSplit(data)
 
 
-### split data into training and testing datasets
-#from sklearn import cross_validation
-#features_train, features_test, labels_train, labels_test = cross_validation.train_test_split(features, labels, test_size=0.1, random_state=42)
 
-
-from sklearn.feature_selection import SelectFpr
+from sklearn.feature_selection import SelectFpr, SelectFdr, SelectFwe
 from sklearn.feature_selection import chi2, f_classif
-univariate_filter = SelectFpr(f_classif, alpha = 0.0001)
+univariate_filter = SelectFdr(f_classif, alpha = 0.0001)
 filtered_features = univariate_filter.fit(features, labels).transform(features)
+feature_scores = univariate_filter.scores_
+feature_pvalues = univariate_filter.pvalues_
 feature_tf = univariate_filter.get_support(indices=False)
 feature_indices = univariate_filter.get_support(indices=True)
 
-#print feature_tf
-#print feature_indices
+
+from tabulate import tabulate
+table = []
+for i in range(1, len(features_list[1:])):
+    row = []
+    row.append(features_list[i])
+    row.append(round(feature_scores[i-1], 2))
+    row.append(round(feature_pvalues[i-1], 3))
+    row.append(feature_tf[i-1])
+    table.append(row)
+
+table = sorted(table, key=lambda x: x[2])
+print tabulate(table, headers = ["Feature", "Score", "P-Value", "Include"])
+print ""
 print "The SelectFpr algorhithm suggests using only the following features:"
 
 # Start new features_list, seeding 'poi' as the dependent
@@ -302,31 +287,358 @@ print reduced_features_list
     
 ```
 
+    Feature                      Score    P-Value    Include
+    -------------------------  -------  ---------  ---------
+    salary                       18.58      0              0
+    bonus                        21.06      0              1
+    to_poi_ratio                 16.64      0              0
+    total_stock_value            24.47      0              1
+    exercised_stock_options      25.1       0              1
+    deferred_income              11.6       0.001          0
+    long_term_incentive          10.07      0.002          0
+    total_payments                8.87      0.003          0
+    restricted_stock              9.35      0.003          0
+    shared_receipt_with_poi       8.75      0.004          0
+    loan_advances                 7.24      0.008          0
+    expenses                      6.23      0.014          0
+    from_poi_ratio                3.21      0.075          0
+    deferral_payments             0.22      0.642          0
+    restricted_stock_deferred     0.06      0.799          0
+    
     The SelectFpr algorhithm suggests using only the following features:
-    ['poi', 'salary', 'bonus', 'to_poi_ratio', 'total_stock_value', 'exercised_stock_options']
+    ['poi', 'bonus', 'total_stock_value', 'exercised_stock_options']
 
 
-### 3 Algorhithm Selection
+Using SelectFpr we select only features with a p-value < 0.001 for our analysis. Looking at the features we just created, 'to_poi_ratio' fulfilled that criterion and is one of the 5 features selected. The other feature created, 'from_poi_ratio' has a relatively low score (3.21) and a relatively high p-value (0.075), so it is not selected.
 
-It's important to evaluate algorhitms against a test set that they haven't been trained against. This prevents overfitting to available data. For that purpose we will first split the data into test & training sets and define a function to evaluate the predictions of the algorhithms we'll investigate.
+Overall, it's interesting to note that the 2 strongest features are stock related (exercised_stock_options and total_stock_value), followed by bonus (Score 21.06). We would expect POIs to have benefitted from the fraud they committed mainly through stock options and their bonuses.
+
+#### 2.3 Feature Scaling
+
+The features selected have vastly different scales, i.e. the financial features such as salary and bonus go into the millions, whereas the to_poi_ratio ranges between 0 and 1. This can be an issue in the sense that many classifiers look to minimize error rates, and naturally the error rate of a variable ranging in millions will be far bigger than the error rate of a variable ranging between 0 and 1. In order to avoid this relative oversensitivity to features with large scales, we will normalize all features to range between 0 and 1.
 
 
 ```python
-# Rebuild labels & features with reduced_features_list
-data = featureFormat(my_dataset, reduced_features_list)
-labels, features = targetFeatureSplit(data)
+from sklearn import preprocessing
 
-# Build train and test sets for cross validation
+data = featureFormat(my_dataset, reduced_features_list)
+scaler = preprocessing.MinMaxScaler()
+data_minmax = scaler.fit_transform(data)
+```
+
+### 3 Algorhithm Selection
+
+We will run the scaled data against the algorhithms introduced in the course. Not all algorhithms require scaling, but in testing both scaled and unscaled I found that the algorhithms performed better or equal with scaled data.
+
+
+```python
+data = featureFormat(my_dataset, reduced_features_list)
+#labels, features = targetFeatureSplit(data)
+labels_scaled, features_scaled = targetFeatureSplit(data_minmax)
+
+# Build train and test sets for validation
 from sklearn import cross_validation
-features_train, features_test, labels_train, labels_test = cross_validation.train_test_split(features, labels, 
+features_train, features_test, labels_train, labels_test = cross_validation.train_test_split(features_scaled, labels_scaled, 
                                                                                              test_size=0.3, 
                                                                                              random_state=42)
 ```
 
+#### 3.1 Naive Bayes 
+
 
 ```python
-# Functions for evaluating outcomes
-def eval(pred, print_or_return = "print"):
+from sklearn.naive_bayes import GaussianNB
+clf = GaussianNB()
+clf = clf.fit(features_train, labels_train)   
+accuracy = clf.score(features_train, labels_train)
+print "Accuracy Train:", accuracy
+
+pred = clf.predict(features_test)
+accuracy = clf.score(features_test, labels_test)
+print "Accuracy Test:", accuracy
+```
+
+    Accuracy Train: 0.912087912088
+    Accuracy Test: 0.8
+
+
+#### 3.2 SVM 
+
+
+```python
+from sklearn.svm import SVC
+clf = SVC()
+clf = clf.fit(features_train, labels_train)
+accuracy = clf.score(features_train, labels_train)
+print "Accuracy Train:", accuracy
+
+pred = clf.predict(features_test)
+accuracy = clf.score(features_test, labels_test)
+print "Accuracy Test:", accuracy
+```
+
+    Accuracy Train: 0.912087912088
+    Accuracy Test: 0.75
+
+
+#### 3.3 Decision Tree
+
+
+```python
+from sklearn import tree
+clf = tree.DecisionTreeClassifier()
+clf = clf.fit(features_train, labels_train)
+accuracy = clf.score(features_train, labels_train)
+print "Accuracy Train:", accuracy
+print "Feature importance:", clf.feature_importances_
+
+pred = clf.predict(features_test)
+accuracy = clf.score(features_test, labels_test)
+print "Accuracy Test:", accuracy
+```
+
+    Accuracy Train: 1.0
+    Feature importance: [ 0.21787149  0.37625035  0.24520461  0.03426205  0.1264115 ]
+    Accuracy Test: 0.775
+
+
+#### 3.4 Random Forest
+
+
+```python
+from sklearn.ensemble import RandomForestClassifier
+clf = RandomForestClassifier()
+clf = clf.fit(features_train, labels_train)
+accuracy = clf.score(features_train, labels_train)
+print "Accuracy Train:", accuracy
+print "Feature importance:", clf.feature_importances_
+
+pred = clf.predict(features_test)
+accuracy = clf.score(features_test, labels_test)
+print "Accuracy Test:", accuracy
+```
+
+    Accuracy Train: 0.967032967033
+    Feature importance: [ 0.14847824  0.30405978  0.15254894  0.23712117  0.15779187]
+    Accuracy Test: 0.8
+
+
+It's clear that the *SVM* algorhithm performed the worst. Looking at the ratios suggests that SVM took the "shortcut" to simply declare nobody a POI (train: 0.91 is equivalent to 82/91 non_POIs and 0.75 is equivalent to 30/40 for the test set). 
+
+I was somewhat surprised by the fact that *Naive Bayes* outperformed the *decision tree algorhithm*, given that decision trees are supposed to be able to handle intercorrelation better and we saw earlier that some variables have correlation. It's clear that the Decision Tree overfitted, given that it's train accuracy is 1.0.
+
+The *Random Forest* algorhithm matched the accuracy of Naive Bayes for the test set at 0.8, despite looking to be more overfit given it's higher train accuracy. I will therefore pick the Random Forest algorhithm for the final analysis, as I am more confident that with tuning and cross-validation it can further improve.
+
+### 4 Tuning and Evaluation 
+
+So far we only tested the default values of the random forest algorithm. However, Machine Learning Algorhithms typically come with a set of hyperparameters that we can use to tweak the algorhithm further and tune it to our dataset. The ultimate goal of such a tuning process is to optimize performance against an independent test set. In this section, we will specifically investigate the following main hyperparameters. These allow us to define more precisely how to run the Random Forest algorhithm:
+1. class_weight - given the class-imbalance, we can tweak this parameter
+2. min_samples_split - the minimum number of observation each tree leaf node should have
+3. n_estimators - the number of trees to run The ultimate goal here is to make sure we don't overfit our algorhithm.
+
+Optimizing for performance on an independent dataset implies that we need to prevent overfitting. Therefore, in assessing the performance we will only look at the test data set. Here, at a first glance, the accuracy we found with the algorhithms above looks quite high, ranging between 0.75 and 0.8. However, given the class-imbalance, namely that 75% of observations are not POIs, this number becomes less impressive. More specifically, due tot he imbalance it's easy to identify (or guess correctly) the non-POIs, whereas what we really set out to do is identifying POIs.
+
+That's why we should focus more on the precision and recall scores: 
+
+
+```python
+eval_predictions(pred)
+```
+
+    True values     : [False, False, False, False, False, False, True, False, True, False, False, True, False, True, False, False, False, True, False, False, False, False, True, False, True, False, False, True, True, False, False, False, False, False, False, True, False, False, False, False]
+    Predicted values: [False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, True, False, False, False, False]
+    Confusion Matrix:
+    [[30  0]
+     [ 9  1]]
+    Precision: 1.0
+    Recall: 0.1
+
+
+Looking at it like this, we see that the Random Forest, is not performing really well yet at identifying the POIs. 
+Our precision is perfect at 1.0, given that the one predicted POI is actually a POI. However, our model missed out on 9 out of 10 POIs, so there's lots more we should tweak.
+
+Therefore, going forward we will measure against Precision and Recall rather than accuracy. We will test and identify good values for the hyperparameters and should be able to further improve our predictions by fine-tuning our algorhithm that way.
+
+#### 4.1 class_weight
+
+Given the class-imbalance, it looks like the parameter class_weight could help address it. Besides the default "None", we can pick between "balanced" and "balanced_subsample". In an initial run the performance actually decreased when using the latter, however this is really counter-intuitive. We will therefore set the default to "balanced" while tweaking the other parameters, then revisit class_weight once the other two parameters are tweaked.
+
+
+```python
+# Define base Random Forest Classifier
+def randomForestclf(class_weight = "balanced", min_samples_split = 2, n_estimators = 10):
+    from sklearn.ensemble import RandomForestClassifier
+    clf = RandomForestClassifier(class_weight = class_weight, 
+                                 min_samples_split = min_samples_split, 
+                                 n_estimators = n_estimators)
+    clf = clf.fit(features_train, labels_train)
+    pred = clf.predict(features_test)
+    precision, recall = eval(pred, print_or_return = "return") 
+    return precision, recall
+```
+
+#### 4.2 min_samples_split
+
+
+```python
+# Simulate outcomes across values of min_samples_split
+table = []
+for i in range(1, 101, 10):
+    intralist = []
+    intralist.append(i)
+    recall_list = []
+    precision_list = []
+    for r in range(1,100):
+        precision, recall = randomForestclf(min_samples_split = i)
+        precision_list.append(precision)
+        recall_list.append(recall)
+        r += 1
+    avg_precision = sum(precision_list) / len(precision_list)
+    avg_recall = sum(recall_list) / len(recall_list)
+    
+    intralist.append(avg_precision)
+    intralist.append(avg_recall)
+    intralist.append((avg_precision + avg_recall) / 2)
+
+    table.append(intralist)
+    i += 1
+
+print tabulate(table, headers = ["min_samples_split","Precision","Recall", "AVG"])
+```
+
+      min_samples_split    Precision     Recall       AVG
+    -------------------  -----------  ---------  --------
+                      1    0.200337   0.0272727  0.113805
+                     11    0.67773    0.243434   0.460582
+                     21    0.629351   0.410101   0.519726
+                     31    0.600301   0.528283   0.564292
+                     41    0.581551   0.576768   0.579159
+                     51    0.579441   0.511111   0.545276
+                     61    0.36656    0.40101    0.383785
+                     71    0.0656566  0.262626   0.164141
+                     81    0.0555556  0.222222   0.138889
+                     91    0.0808081  0.323232   0.20202
+
+
+It's interesting to see that precision scores decrease for min_samples_split > 11, while for recall these scores keep increasing until min_samples_split is >41. In this exercise, we'll assume that identifying as many true POIs as possible (recall) is equally important as not accusing non-POIs of being POIs. Therefore we'll pick the highest average between the two scores, which is at min_samples_split = 41.
+
+#### 4.3 n_estimators
+
+
+```python
+# Simulate outcomes across values of n_estimators
+table = []
+for i in [1, 10, 25, 50, 100, 250]:
+    intralist = []
+    intralist.append(i)
+    recall_list = []
+    precision_list = []
+    for r in range(1,100):
+        precision, recall = randomForestclf(min_samples_split = 41, n_estimators = i)
+        precision_list.append(precision)
+        recall_list.append(recall)
+        r += 1
+    avg_precision = sum(precision_list) / len(precision_list)
+    avg_recall = sum(recall_list) / len(recall_list)
+    
+    intralist.append(avg_precision)
+    intralist.append(avg_recall)
+    intralist.append((avg_precision + avg_recall) / 2)
+
+    table.append(intralist)
+    i += 1
+
+print tabulate(table, headers = ["n_estimators","Precision","Recall", "AVG"])
+```
+
+      n_estimators    Precision    Recall       AVG
+    --------------  -----------  --------  --------
+                 1     0.190542  0.505051  0.347796
+                10     0.265496  0.549495  0.407496
+                25     0.299846  0.561616  0.430731
+                50     0.297613  0.579798  0.438706
+               100     0.322279  0.593939  0.458109
+               250     0.311889  0.6       0.455945
+
+
+It looks like the highest performance is at n_estimators = 100.
+
+#### 4.4 class_weight revisited
+
+Let's now revisit the class_weight identifier and see which option gives the best outcome.
+
+
+```python
+# Simulate outcomes across values of min_samples_split
+table = []
+options = [None, "balanced", "balanced_subsample"]
+for i in options:
+    intralist = []
+    intralist.append(i)
+    recall_list = []
+    precision_list = []
+    for r in range(1,100):
+        precision, recall = randomForestclf(class_weight = i, min_samples_split = 41, n_estimators = 100)
+        precision_list.append(precision)
+        recall_list.append(recall)
+        r += 1
+    avg_precision = sum(precision_list) / len(precision_list)
+    avg_recall = sum(recall_list) / len(recall_list)
+    
+    intralist.append(avg_precision)
+    intralist.append(avg_recall)
+    intralist.append((avg_precision + avg_recall) / 2)
+
+    table.append(intralist)
+
+print tabulate(table, headers = ["class_weight","Precision","Recall", "AVG"])
+```
+
+    class_weight          Precision    Recall       AVG
+    ------------------  -----------  --------  --------
+                           0.722222   0.2      0.461111
+    balanced               0.321116   0.59798  0.459548
+    balanced_subsample     0.306735   0.59596  0.451347
+
+
+It seems at the parameters of min_samples_split = 41 and using 100 estimators, we get the best result using the "balanced" class weight. Seeing now that the two balanced class-weights clearly outperform the non-adjusted algorhithm - particularly around Recall - also confirms our initial intuition.
+
+### 5 Cross-Validation
+
+It's important to evaluate algorhitms against a test set that they haven't been trained against. This prevents overfitting to available data. The results in section 3 however showed that there was still some overfitting. Part of that could be due to the relatively small sample size of just 91 in the training set. We can use cross-validation to run the Random Forest algorhithm multiple times against different subsets of the data set. This could further improve our classifier.
+
+
+```python
+from sklearn.cross_validation import cross_val_predict
+
+clf = RandomForestClassifier(n_estimators = 100, min_samples_split = 41, class_weight = "balanced")
+clf = clf.fit(features_train, labels_train)
+pred = cross_validation.cross_val_predict(clf, features_scaled,
+                                                labels_scaled, cv=3)
+from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score
+print "Accuracy:", accuracy_score(labels_scaled, pred)
+print "Confusion Matrix:"
+print confusion_matrix(labels_scaled, pred)
+print "Precision:", precision_score(labels_scaled, pred)
+print "Recall:", recall_score(labels_scaled, pred)
+```
+
+    Accuracy: 0.801526717557
+    Confusion Matrix:
+    [[94 19]
+     [ 7 11]]
+    Precision: 0.366666666667
+    Recall: 0.611111111111
+
+
+Using cross-validation, we get a better recall rate than we had in the initial 40/60 split in section 4. Accuracy is about the same and precision is less. This score is probably more in line with what we can expect for predicting completely unknown data.
+
+### Appendix: Helper Functions
+
+
+```python
+## Function for evaluating algorhithm predictions
+def eval_predictions(pred, print_or_return = "print"):
     #convert true values to True/False and print
     true_list = []
     for i in labels_test:
@@ -354,228 +666,32 @@ def eval(pred, print_or_return = "print"):
         return precision, recall
 ```
 
-#### 3.1 Naive Bayes 
-
 
 ```python
-from sklearn.naive_bayes import GaussianNB
-clf = GaussianNB()
-clf = clf.fit(features_train, labels_train)   
-
-pred = clf.predict(features_test)
-accuracy = clf.score(features_test, labels_test)
-print "Accuracy:", accuracy
-
-eval(pred)
-```
-
-    Accuracy: 0.775
-    True values     : [False, False, False, False, False, False, True, False, True, False, False, True, False, True, False, False, False, True, False, False, False, False, True, False, True, False, False, True, True, False, False, False, False, False, False, True, False, False, False, False]
-    Predicted values: [False, False, False, False, True, False, False, False, True, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, True, False, False, False, False]
-    Confusion Matrix:
-    [[29  1]
-     [ 8  2]]
-    Precision: 0.666666666667
-    Recall: 0.2
-
-
-#### 3.2 SVM 
-
-
-```python
-from sklearn.svm import SVC
-clf = SVC()
-clf = clf.fit(features_train, labels_train)   
-
-pred = clf.predict(features_test)
-accuracy = clf.score(features_test, labels_test)
-print "Accuracy:", accuracy
-
-eval(pred)
-```
-
-    Accuracy: 0.75
-    True values     : [False, False, False, False, False, False, True, False, True, False, False, True, False, True, False, False, False, True, False, False, False, False, True, False, True, False, False, True, True, False, False, False, False, False, False, True, False, False, False, False]
-    Predicted values: [False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False]
-    Confusion Matrix:
-    [[30  0]
-     [10  0]]
-    Precision: 0.0
-    Recall: 0.0
-
-
-#### 3.3 Decision Tree
-
-
-```python
-from sklearn import tree
-clf = tree.DecisionTreeClassifier()
-clf = clf.fit(features_train, labels_train)
-
-pred = clf.predict(features_test)
-accuracy = clf.score(features_test, labels_test)
-print "Accuracy:", accuracy
-
-eval(pred)
-```
-
-    Accuracy: 0.75
-    True values     : [False, False, False, False, False, False, True, False, True, False, False, True, False, True, False, False, False, True, False, False, False, False, True, False, True, False, False, True, True, False, False, False, False, False, False, True, False, False, False, False]
-    Predicted values: [False, False, False, False, False, False, True, False, False, False, False, False, False, False, False, False, False, False, False, False, True, False, False, True, False, False, False, False, False, False, False, False, False, False, False, True, False, False, False, False]
-    Confusion Matrix:
-    [[28  2]
-     [ 8  2]]
-    Precision: 0.5
-    Recall: 0.2
-
-
-#### 3.4 Random Forest
-
-
-```python
-from sklearn.ensemble import RandomForestClassifier
-clf = RandomForestClassifier()
-clf = clf.fit(features_train, labels_train)
-
-pred = clf.predict(features_test)
-accuracy = clf.score(features_test, labels_test)
-print "Accuracy:", accuracy
-
-eval(pred)
-```
-
-    Accuracy: 0.8
-    True values     : [False, False, False, False, False, False, True, False, True, False, False, True, False, True, False, False, False, True, False, False, False, False, True, False, True, False, False, True, True, False, False, False, False, False, False, True, False, False, False, False]
-    Predicted values: [False, False, False, False, False, False, True, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, True, False, False, False, True, False, False, False, False, False, False, False, True, False, False, False, False]
-    Confusion Matrix:
-    [[29  1]
-     [ 7  3]]
-    Precision: 0.75
-    Recall: 0.3
-
-
-The SVM algorhithm took the "shortcut" to simply declare nobody a POI, which gives it a relatively high accuracy at 0.75, but of course 0 precision and recall. I was somewhat surprised by the fact that Naive Bayes outperformed the decision tree algorhithm, given that decision trees are generally able to handle intercorrelation better and we saw earlier that some variables have correlation. Overall however, the Random Forest (which is an ensemble of decision trees) showed the best performance across all 3 metrics, accuracy, precision and recall.
-
-### 4 Tuning and Validation 
-
-At a first glance, the accuracy we found with the algorhithms above looks quite high, ranging between 0.75 and 0.8. However, given the class-imbalance, namely that 75% of observations are not POIs, this number becomes less impressive. More specifically, due tot he imbalance it's easy to identify (or guess correctly) the non-POIs, whereas what we really set out to do is identifying POIs.
-
-That's why we should focus more on the precision and recall scores. Doing that we see that even the best algorhithm above, the Random Forest, is not performing really well yet at identifying the POIs. Our precision is quite ok at 3 out of 4 predicted POIs actually being POIs (Precision of 0.75). However, the prediction is still "too conservative" in the sense that out of 10 POIs, only 3 were identified (0.3 Recall).
-
-So we will tune the Random Forest and evaluate not only accuracy but more so precision and especially recall.
-
-Specifically, we will look at 3 parameters: (1) class_weight, (2) min_samples_split, and (3) n_estimators.
-
-#### 4.1 class_weight
-
-Given the class-imbalance, it looks like the parameter class_weight could help address it. Besides the default "None", we can pick between "balanced" and "balanced_subsample". In an initial run the performance actually decreased when using the latter, however this is really counter-intuitive. We will therefore set the default to "balanced" while tweaking the other parameters, then revisit class_weight once the other two parameters are tweaked.
-
-
-```python
-# Define base Random Forest Classifier
-def randomForestclf(class_weight = "balanced", min_samples_split = 2, n_estimators = 10):
-    from sklearn.ensemble import RandomForestClassifier
-    clf = RandomForestClassifier(class_weight = class_weight, 
-                                 min_samples_split = min_samples_split, 
-                                 n_estimators = n_estimators)
-    clf = clf.fit(features_train, labels_train)
-    pred = clf.predict(features_test)
-    precision, recall = eval(pred, print_or_return = "return") 
-    return precision, recall
+def dot_plot(data, features):
+    for point in data:
+        x_axis = point[1]
+        y_axis = point[2]
+        plt.scatter( x_axis, y_axis )
+        if point[0] == 1:
+            plt.scatter(x_axis, y_axis, color="r", marker="*")
+    
+    plt.xlabel(features[1])
+    plt.ylabel(features[2])
+    plt.show()
 ```
 
 
 ```python
-# Simulate outcomes across values of min_samples_split
-print "min_samples_split    ", "avg precision    ", "avg recall        ", "avg"
-for i in range(1, 101, 10):
-    precision_list = []
-    recall_list = []
-    for r in range(1,100):
-        precision, recall = randomForestclf(min_samples_split = i)
-        precision_list.append(precision)
-        recall_list.append(recall)
-        r += 1
-    avg_precision = sum(precision_list) / len(precision_list)
-    avg_recall = sum(recall_list) / len(recall_list)
-    print i, "                  ", avg_precision, "  ", avg_recall, "   ", (avg_precision + avg_recall)/2
-    i += 1
+def outliers(feature, n):
+    from feature_format import featureFormat, targetFeatureSplit
+    outliers = []
+    for key in data_dict:
+        val = data_dict[key][feature]
+        if val == 'NaN':
+            continue
+        outliers.append((key,int(val)))
+    
+    max_outliers = sorted(outliers,key=lambda x:x[1],reverse=True)[:n]
+    return max_outliers
 ```
-
-    min_samples_split     avg precision     avg recall         avg
-    1                    0.19696969697    0.0242424242424     0.110606060606
-    11                    0.741414141414    0.247474747475     0.494444444444
-    21                    0.629300637634    0.432323232323     0.530811934979
-    31                    0.583463183842    0.505050505051     0.544256844446
-    41                    0.582120493885    0.570707070707     0.576413782296
-    51                    0.579754823813    0.523232323232     0.551493573523
-    61                    0.351685633207    0.436363636364     0.394024634786
-    71                    0.111111111111    0.444444444444     0.277777777778
-    81                    0.0707070707071    0.282828282828     0.176767676768
-    91                    0.0833333333333    0.333333333333     0.208333333333
-
-
-It's interesting to see that precision scores decrease for min_samples_split > 11, while for recall these scores keep increasing until min_samples_split is >41. In this exercise, we'll assume that identifying as many true POIs as possible (recall) is equally important as not accusing non-POIs of being POIs. Therefore we'll pick the highest average between the two scores, which is at min_samples_split = 41.
-
-### 4.3 n_estimators
-
-
-```python
-# Simulate outcomes across values of n_estimators
-print "n_estimators    ", "avg precision    ", "avg recall        ", "avg"
-for i in [1, 10, 25, 50, 100, 250]:
-    precision_list = []
-    recall_list = []
-    for r in range(1,100):
-        precision, recall = randomForestclf(min_samples_split = 41, n_estimators = i)
-        precision_list.append(precision)
-        recall_list.append(recall)
-        r += 1
-    avg_precision = sum(precision_list) / len(precision_list)
-    avg_recall = sum(recall_list) / len(recall_list)
-    print i, "                  ", avg_precision, "  ", avg_recall, "   ", (avg_precision + avg_recall)/2
-    i += 1
-```
-
-    n_estimators     avg precision     avg recall         avg
-    1                    0.43767243365    0.630303030303     0.533987731977
-    10                    0.594018523564    0.533333333333     0.563675928449
-    25                    0.625978679009    0.557575757576     0.591777218292
-    50                    0.63099111887    0.539393939394     0.585192529132
-    100                    0.636080137595    0.527272727273     0.581676432434
-    250                    0.609975294066    0.511111111111     0.560543202589
-
-
-It looks like the highest performance is is at n_estimators = 25.
-
-It looks like the highest performance is is at n_estimators = 25.
-
-#### 4.4 class_weight revisited
-
-Let's now revisit the class_weight identifier and see which option gives the best outcome.
-
-
-```python
-# Simulate outcomes across values of min_samples_split
-print "class weight          ", "avg precision    ", "avg recall        ", "avg"
-options = [None, "balanced", "balanced_subsample"]
-for i in options:
-    precision_list = []
-    recall_list = []
-    for r in range(1,100):
-        precision, recall = randomForestclf(class_weight = i, min_samples_split = 41, n_estimators = 25)
-        precision_list.append(precision)
-        recall_list.append(recall)
-        r += 1
-    avg_precision = sum(precision_list) / len(precision_list)
-    avg_recall = sum(recall_list) / len(recall_list)
-    print i, "                  ", avg_precision, "  ", avg_recall, "   ", (avg_precision + avg_recall)/2
-```
-
-    class weight           avg precision     avg recall         avg
-    None                    0.382154882155    0.0525252525253     0.21734006734
-    balanced                    0.608547961578    0.516161616162     0.56235478887
-    balanced_subsample                    0.617565683475    0.566666666667     0.592116175071
-
-
-It seems at the parameters of min_samples_split = 41 and using 25 estimators, we get the best result using the "balanced_subsample" class weight. Seeing now that the two balanced class-weights clearly outperform the non-adjusted algorhithm also confirms our initial intuition.

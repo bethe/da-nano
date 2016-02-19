@@ -60,7 +60,7 @@ from sklearn.cross_validation import train_test_split
 features_train, features_test, labels_train, labels_test = \
     train_test_split(features, labels, test_size=0.3, random_state=42)
 
-clf = RandomForestClassifier(n_estimators = 25, min_samples_split = 41, class_weight = "balanced_subsample")
+clf = RandomForestClassifier(n_estimators = 100, min_samples_split = 41, class_weight = "balanced")
 clf = clf.fit(features_train, labels_train)
 
 
