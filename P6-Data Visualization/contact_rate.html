@@ -6,10 +6,6 @@
   <script src="http://dimplejs.org/dist/dimple.v2.0.0.min.js"></script>
   <style>
 
-    circle.dimple-series-1 {
-	    fill: green;
-    }
-
     h2 {
 	    text-anchor: middle;
 	   font-family: sans-serif;
@@ -52,9 +48,13 @@
 	      new dimple.color("rgb(0, 0, 255)") // Set a blue fill with a darker blue stroke
 	  ];
 */ 
-          var x = myChart.addTimeAxis("x", "Year"); 
+//	  var x = myChart.addTimeAxis("x", "Year");
+	  var x = myChart.addTimeAxis("x", "Date", "%b %Y","%b %y");
+	  x.overrideMin = new Date("Dec 2010");
+	  x.overrideMax = new Date("Feb 2013");
+//	  x.overrideMax = end; 
 //	  x.parseTimeFormat = "%b %y";
-	  x.tickFormat = "%b %y";
+//	  x.tickFormat = "%b %y";
 	  var usersAxis = myChart.addMeasureAxis("y", "Users");
           var ticketAxis = myChart.addMeasureAxis(usersAxis, "Tickets");
 	  var crAxis = myChart.addMeasureAxis("y", "Contact Rate");
@@ -62,13 +62,20 @@
           usersAxis.title = "Monthly Users / Tickets (indexed at 100)";
 	  crAxis.showGridlines = false;
           crAxis.title = "Contact Rate (Tickets / Users)";
-          var bar = myChart.addSeries("Monthly Users", dimple.plot.line,[x, usersAxis]);
-	  var line = myChart.addSeries("Monthly Tickets", dimple.plot.bar, [x, ticketAxis]);
-	  bar.barGap = 5;
-	  myChart.assignColor("Monthly Users", "black", "black", 0.25);
-	  myChart.assignColor("Monthly Tickets", "black", "black", 0.15);
-          myChart.addSeries("Contact Rate (Tickets / Users)", dimple.plot.line,[x, crAxis]);
-	  myChart.addSeries("Contact Rate (Tickets / Users)", dimple.plot.scatter,[x, crAxis]);
+	  
+	  var bar = myChart.addSeries(["Comment", "Contact Rate", "Users", "Monthly Tickets"], dimple.plot.bar, [x, ticketAxis]);
+	  myChart.addSeries("Monthly Users", dimple.plot.line, [x, usersAxis]);
+	  var dots = myChart.addSeries(["Comment", "Contact Rate", "Tickets", " "], 
+						dimple.plot.scatter, [x, usersAxis]); //invisible scatter for tooltip
+          var line = myChart.addSeries("Contact Rate (Tickets / Users)", dimple.plot.line,[x, crAxis]);
+	  myChart.addSeries(["Comment", "Users", "Tickets", "Contact Rate (Tickets / Users)"], dimple.plot.scatter,[x, crAxis]);
+	  
+	  bar.x.floatingBarWidth = 20;
+	  line.lineWeight = 3;
+
+	  myChart.assignColor("Monthly Users", "black", "black", 0.20);
+	  myChart.assignColor(" ", "black", "black", 0); //make user scatter invisible
+	  myChart.assignColor("Monthly Tickets", "white", "black", 0.20);
 	  myChart.addLegend("50%", 10, 380, 20, "right");
 
 	  myChart.draw();
