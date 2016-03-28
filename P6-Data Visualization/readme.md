@@ -13,27 +13,27 @@ Upon feedback of my initial draft I changed the color scheme to blue for contact
 
 
 ### Feedback 
-Find my earliest published version at http://bl.ocks.org/bethe/raw/33c25975418d1dbbf2d4/
+Find my earliest published version at http://bl.ocks.org/bethe/raw/33c25975418d1dbbf2d4/ .  
 It corresponds to my first git commit for this project from Feb 21 2016: https://github.com/bethe/da-nano/commit/79920e44fa87347bbcbf33d870f8798788e09631
 
 I asked my girlfriend as well as two friends, both in consulting, to give me feedback upon my initial graph version. These were some of the things they said:
 
-** (1) Too many lines in different directions, hard to tell what to focus on**
+**(1) Too many lines in different directions, hard to tell what to focus on**  
 --> In response, I picked a lighter gray for the user line and made the contact rate line stronger
 
-** (2) Bars look too slim, overemphasizing pattern and not clear what they mean**
+**(2) Bars look too slim, overemphasizing pattern and not clear what they mean**  
 --> I made them broader.
 
-** (3) Impossible to tell the difference between the two gray shades**
+**(3) Impossible to tell the difference between the two gray shades**  
 --> Made bar charts with empty filling which helped keeping them subtle and easy to distiguish in legend
 
-** (4) X-axis is confusing / ugly in that the first data points overlap with y-axes**
+**(4) X-axis is confusing / ugly in that the first data points overlap with y-axes**  
 --> Fixed by added padding
 
-** (5) X-axis labels are confusing. Why would I want to know day of the week**
+**(5) X-axis labels are confusing. Why would I want to know day of the week**  
 --> Fixed by translating raw data with PARSETIME
 
-** (6) Would be helpful to get more explanations on downward trend **
+**(6) Would be helpful to get more explanations on downward trend **  
 --> Added "Comment" entries to raw data and embedded via mouse-over pop-up 
 
 
