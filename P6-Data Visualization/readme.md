@@ -1,6 +1,6 @@
 ### Summary
 
-The data set describes the effect of the rollout of a new back-end system for an online product. The new system is meant to be more stable and so its impact is measured on Support Volume, i.e. a reduction in the number of tickets that customers write in to Support is expected. Given that the user base grows while the system is rolled out, the impact is hard to measure in absolute support volume numbers, but it can be measured when looking at the ratio of tickets / users (Contact rate). This is an adaptaion of a real project I have worked on in the past (with fake but representative numbers).
+The visualization explains the effect of the rollout of a new back-end system for an online product. The new system is meant to be more stable and so its impact is measured on Support Volume, i.e. a reduction in the number of tickets that customers write in to Support is expected. Given that the user base grows while the system is rolled out, the impact is hard to measure in absolute support volume numbers, but it can be measured when looking at the ratio of tickets / users (Contact rate). This is an adaptaion of a real project I have worked on in the past (with fake but representative numbers).
 
 ![alt tag](https://raw.githubusercontent.com/bethe/da-nano/master/P6-Data%20Visualization/Data%20Vis%20Final.png)
 Find the full visualization at http://bl.ocks.org/bethe/raw/2ae59fe2d4e4136339a3/
