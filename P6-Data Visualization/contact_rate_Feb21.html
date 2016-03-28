@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="http://d3js.org/d3.v3.min.js"></script>
+  <script src="http://dimplejs.org/dist/dimple.v2.0.0.min.js"></script>
+  <style>
+    circle.dimple-series-1 {
+	    fill: green;
+    }
+    h2 {
+	    text-anchor: middle;
+	   font-family: sans-serif;
+	   font-weight: bold;
+	    text-align: center;
+    }
+  </style>
+
+    <script type="text/javascript">
+      function draw(data) {
+      
+      /*
+        D3.js setup code
+      */
+          "use strict";
+          var margin = 75,
+              width = 875 - margin,
+              height = 425 - margin;
+          d3.select("body")
+		  .append("h2")
+		  .text("Reduction of Support Contact Rate");
+          var svg = d3.select("body")
+            .append("svg")
+              .attr("width", width + margin)
+              .attr("height", height + margin)
+            .append('g')
+                .attr('class','chart');
+      /*
+        Dimple.js Chart construction code
+      */
+	  var myChart = new dimple.chart(svg, data);
+          var x = myChart.addTimeAxis("x", "Date"); 
+         // x.parseTimeFormat = "%b %y";
+         // x.tickFormat = "%b %y";
+          var usersAxis = myChart.addMeasureAxis("y", "Users");
+          var ticketAxis = myChart.addMeasureAxis(usersAxis, "Tickets");
+          var crAxis = myChart.addMeasureAxis("y", "Contact Rate");
+          usersAxis.showGridlines = false;
+          usersAxis.title = "Monthly Users / Tickets (indexed at 100)";
+          crAxis.showGridlines = false;
+          crAxis.title = "Contact Rate (Tickets / Users)";
+          var bar = myChart.addSeries("Monthly Users", dimple.plot.line,[x, usersAxis]);
+          var line = myChart.addSeries("Monthly Tickets", dimple.plot.bar, [x, ticketAxis]);
+          bar.barGap = 5;
+          myChart.assignColor("Monthly Users", "black", "black", 0.25);
+          myChart.assignColor("Monthly Tickets", "black", "black", 0.15);
+          myChart.addSeries("Contact Rate (Tickets / Users)", dimple.plot.line,[x, crAxis]);
+          myChart.addSeries("Contact Rate (Tickets / Users)", dimple.plot.scatter,[x, crAxis]);
+          myChart.addLegend("50%", 10, 380, 20, "right");
+          myChart.draw();
+     
+        };
+	
+      </script>
+  </head>
+<body>
+  <script type="text/javascript">
+  /*
+    Use D3 (not dimple.js) to load the TSV file
+    and pass the contents of it to the draw function
+    */
+  d3.tsv("contact_rate.tsv", draw);
+  </script>
+</body>
+</html>
