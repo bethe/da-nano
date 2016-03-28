@@ -33,11 +33,11 @@ I asked my girlfriend as well as two friends, both in consulting, to give me fee
 **(5) X-axis labels are confusing. Why would I want to know day of the week**  
 --> Fixed by translating raw data with PARSETIME
 
-**(6) Would be helpful to get more explanations on downward trend **  
+**(6) Would be helpful to get more explanations on downward trend**  
 --> Added "Comment" entries to raw data and embedded via mouse-over pop-up 
 
 
 ### Resources
--dimple.js Documentation
--Data Visualization with d3.js course at Udacity
--Posts in Stack Overflow
+- dimple.js Documentation
+- Data Visualization with d3.js course at Udacity
+- Posts on Stack Overflow
