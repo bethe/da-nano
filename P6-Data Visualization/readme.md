@@ -3,7 +3,7 @@
 The data set describes the effect of the rollout of a new back-end system for an online product. The new system is meant to be more stable and so its impact is measured on Support Volume, i.e. a reduction in the number of tickets that customers write in to Support is expected. Given that the user base grows while the system is rolled out, the impact is hard to measure in absolute support volume numbers, but it can be measured when looking at the ratio of tickets / users (Contact rate). This is an adaptaion of a real project I have worked on in the past (with fake but representative numbers).
 
 ![alt tag](https://raw.githubusercontent.com/bethe/da-nano/master/P6-Data%20Visualization/Data%20Vis%20Final.png)
-Find the full visualization at (http://bl.ocks.org/bethe/raw/2ae59fe2d4e4136339a3/)
+Find the full visualization at http://bl.ocks.org/bethe/raw/2ae59fe2d4e4136339a3/
 
 ### Design
 My objective was to design one data visualization that explains the impact of the new back-end system on Support volume. I decided upon a combination of Bar graphs and lines to visualize the idea. Bar graphs are great to compare absolutes and lines are great to emphasize a trend. I therefore used bar graphs for the support volume, as the most important point here was to show how the absolute numbers fluctuated. For user base and contact rate I picked a line graph, as I wanted to emphasize the growth in users and the reduction in contact rate over time. I also added dot plots to the contact rate line to make it more prominent and invite hovering over for more information.
@@ -13,7 +13,7 @@ Upon feedback of my initial draft I changed the color scheme to blue for contact
 
 
 ### Feedback 
-Find my earliest published version at (http://bl.ocks.org/bethe/raw/33c25975418d1dbbf2d4/)
+Find my earliest published version at http://bl.ocks.org/bethe/raw/33c25975418d1dbbf2d4/
 
 I asked my girlfriend as well as two friends, both in consulting, to give me feedback upon my initial graph version. These were some of the things they said:
 
