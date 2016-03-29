@@ -8,7 +8,7 @@ Find the full visualization at http://bl.ocks.org/bethe/raw/2ae59fe2d4e4136339a3
 ### Design
 My objective was to design one data visualization that explains the impact of the new back-end system on Support volume. I decided upon a combination of Bar graphs and lines to visualize the idea. Bar graphs are great to compare absolutes and lines are great to emphasize a trend. I therefore used bar graphs for the support volume, as the most important point here was to show how the absolute numbers fluctuated. For user base and contact rate I picked a line graph, as I wanted to emphasize the growth in users and the reduction in contact rate over time. I also added dot plots to the contact rate line to make it more prominent and invite hovering over for more information.
 
-Upon feedback of my initial draft I changed the color scheme to blue for contact rate and to light greys / white fillings for the support volume and user base growth. I also made the contact rate line stronger. This ensured the 'eyecatcher' was the downward trending contact rate line. I also changed the scales, so that both support volume and user base were starting at an index of 100. This made the graph easier to interpret. On the x-axis I converted the format to one of "Month Year" to reflect the raw data. Finally I added a 'Comment' line that could add further context in the mouse-over pop-up for each data point.
+Upon feedback of my initial draft I changed the color scheme to blue for contact rate and to light greys / white fillings for the support volume and user base growth. I also made the contact rate line stronger. This ensured the 'eyecatcher' was the downward trending contact rate line. I also changed the scales, so that both support volume and user base were starting at an index of 100. This made the graph easier to interpret. On the x-axis I converted the format to one of "Month Year" to reflect the raw data. Finally I added a 'Comment' line that could add further context in the tooltip for each data point.
 
 
 
@@ -37,7 +37,13 @@ I asked my girlfriend as well as two friends, both in consulting, to give me fee
 --> Changed title to be more explanatory
 
 **(7) Would be helpful to get more explanations on downward trend**  
---> Added "Comment" entries to raw data and embedded via mouse-over pop-up 
+--> Added "Comment" entries to raw data and embedded via tooltip 
+
+**(8) Confusing y1 axis title "Tickets / Users" sounds like "Tickets divided by Users"
+--> Changed to "Index (starts at 100 for both Tickets and Users)"
+
+**(9) Tooltips contain too much information
+--> Simplified and only added "comment" field to tooltip for Contact Rate
 
 
 ### Resources

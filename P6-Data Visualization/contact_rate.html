@@ -19,6 +19,11 @@
             /*
               D3.js setup code
             */
+    	    
+            // Chart Title
+      	    d3.select("body")
+                .append("h2")
+                .text("Reduction of Support Contact Rate through rollout of new back-end");
 			
       	    // positioning variables
             "use strict";
@@ -26,10 +31,6 @@
                 width = 875 - margin,
                 height = 425 - margin;
             
-    	    // Chart Title
-      	    d3.select("body")
-                .append("h2")
-                .text("Reduction of Support Contact Rate through rollout of new back-end");
 
       	    // Chart construction and positioning
             var svg = d3.select("body")
@@ -61,23 +62,25 @@
             crAxis.title = "Contact Rate (Tickets per User)";
 
             
-      		// Add plots
-      		var bar = myChart.addSeries(["Comment", "Contact Rate", "Users", "Monthly Tickets"], dimple.plot.bar, [x, ticketAxis]);
+      		// Plot series
+            var bar = myChart.addSeries("Monthly Tickets", dimple.plot.bar,[x, ticketAxis]);
             myChart.addSeries("Monthly Users", dimple.plot.line, [x, usersAxis]);
-            var dots = myChart.addSeries(["Comment", "Contact Rate", "Tickets", " "],
-                dimple.plot.scatter, [x, usersAxis]); //invisible scatter for tooltip
+            //var dots = myChart.addSeries(["Comment", "Contact Rate", "Tickets", " "],
+              //  dimple.plot.scatter, [x, usersAxis]); //invisible scatter for tooltip
             var line = myChart.addSeries("Contact Rate (Tickets / Users)", dimple.plot.line, [x, crAxis]);
-            myChart.addSeries(["Comment", "Users", "Tickets", "Contact Rate (Tickets / Users)"], dimple.plot.scatter, [x, crAxis]);
+            myChart.addSeries("Contact Rate (Tickets / Users)", dimple.plot.scatter, [x, crAxis]);
+           
+            // Add additional scatter plot for comments tooltip
+            myChart.addSeries(["Contact Rate (Tickets / Users)", "Comment", " "], dimple.plot.scatter, [x, crAxis]);
 
       
             // Configure plots
       		bar.x.floatingBarWidth = 20;
             line.lineWeight = 3;
-
       
       		// Define colours
             myChart.assignColor("Monthly Users", "black", "black", 0.20);
-            myChart.assignColor(" ", "black", "black", 0); //make user scatter invisible
+            myChart.assignColor(" ", "black", "black", 0); //make comment scatter invisible
             myChart.assignColor("Monthly Tickets", "white", "black", 0.20);
       
       

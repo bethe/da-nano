@@ -1,12 +1,12 @@
 Date	Users	Tickets	Contact Rate	Comment
 Jan 2011	100.00	100	1.00	Start Index at 100
 Feb 2011	99.958	90.7	0.91	push new back-end to 10% of users
-Mar 2011	107.533	100.3	0.93	-
-Apr 2011	112.082	104.2	0.93	-
-May 2011	113.188	101.6	0.90	-
+Mar 2011	107.533	100.3	0.93	new back-end to 15%; some bugs
+Apr 2011	112.082	104.2	0.93	new back-end to 15%; some bugs
+May 2011	113.188	101.6	0.90	new back-end at 15%; bugs fixed
 Jun 2011	109.936	91.6	0.83	push new back-end to 25% of users
-Jul 2011	113.353	93.1	0.82	-
-Aug 2011	119.285	98.6	0.83	-
+Jul 2011	113.353	93.1	0.82	keep stable at 25% of growing user base
+Aug 2011	119.285	98.6	0.83	keep stable at 25% of growing user base
 Sep 2011	129.108	110.5	0.86	default new users on new back-end --> small outage... 
 Oct 2011	121.195	93.1	0.77	had to kill some user accounts. back-end bug for new users fixed
 Nov 2011	131.506	104.8	0.80	re-onboard users on new back-end, no issues this time
@@ -14,13 +14,13 @@ Dec 2011	137.582	109.6	0.80	new back-end to 40% of users
 Jan 2012	147.284	114.0	0.77	new back-end to 60% of users
 Feb 2012	145.932	107.0	0.73	start killing off some accounts that can't be migrated to new-backend
 Mar 2012	139.102	92.9	0.67	more killing off trouble acccounts
-Apr 2012	146.603	98.7	0.67	-
+Apr 2012	146.603	98.7	0.67	recreation of trouble accounts
 May 2012	156.609	107.7	0.69	lots of user growth, stable support
 Jun 2012	166.031	115.7	0.70	more users
 Jul 2012	184.157	136.1	0.74	even more users
-Aug 2012	183.878	129.8	0.71	-
+Aug 2012	183.878	129.8	0.71	some problematic accounts need to be re-migrated
 Sep 2012	170.824	107.1	0.63	kill-off last trouble accounts
-Oct 2012	180.681	114.5	0.63	-
+Oct 2012	180.681	114.5	0.63	user growth, stable contact rate
 Nov 2012	203.151	138.4	0.68	rollout of new back-end to 100%
 Dec 2012	226.995	165.2	0.73	some bugs introduced with latest rollout
-Jan 2013	228.726	160.4	0.70	bug fixes
+Jan 2013	228.726	160.4	0.70	bugs fixed, contact rate -30% since rollout start :)
