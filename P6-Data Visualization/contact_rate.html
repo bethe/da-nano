@@ -1,85 +1,105 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8">
-  <script src="http://d3js.org/d3.v3.min.js"></script>
-  <script src="http://dimplejs.org/dist/dimple.v2.0.0.min.js"></script>
-  <style>
 
-    h2 {
-	    text-anchor: middle;
-	   font-family: sans-serif;
-	   font-weight: bold;
-    }
-  </style>
+<head>
+    <meta charset="utf-8">
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script src="http://dimplejs.org/dist/dimple.v2.0.0.min.js"></script>
+    <style>
+        h2 {
+            text-anchor: middle;
+            font-family: sans-serif;
+            font-weight: bold;
+        }
+    </style>
 
     <script type="text/javascript">
-      function draw(data) {
+        function draw(data) {
+
+            /*
+              D3.js setup code
+            */
+			
+      	    // positioning variables
+            "use strict";
+            var margin = 75,
+                width = 875 - margin,
+                height = 425 - margin;
+            
+    	    // Chart Title
+      	    d3.select("body")
+                .append("h2")
+                .text("Reduction of Support Contact Rate through rollout of new back-end");
+
+      	    // Chart construction and positioning
+            var svg = d3.select("body")
+                .append("svg")
+                .attr("width", width + margin)
+                .attr("height", height + margin)
+                .append('g')
+                .attr('class', 'chart');
+
       
-      /*
-        D3.js setup code
-      */
+      	    /*
+              Dimple.js Chart construction code
+            */
 
-          "use strict";
-          var margin = 75,
-              width = 875 - margin,
-              height = 425 - margin;
+            
+      	    // Create Chart
+      	    var myChart = new dimple.chart(svg, data);
+            
+      	    // Set up Axes
+	        var x = myChart.addTimeAxis("x", "Date", "%b %Y", "%b %y");
+            x.overrideMin = new Date("Dec 2010");
+            x.overrideMax = new Date("Feb 2013");
+            var usersAxis = myChart.addMeasureAxis("y", "Users");
+            var ticketAxis = myChart.addMeasureAxis(usersAxis, "Tickets");
+            var crAxis = myChart.addMeasureAxis("y", "Contact Rate");
+            usersAxis.showGridlines = false;
+            usersAxis.title = "Index (starts at 100 for both Monthly Users and Monthly Tickets)";
+            crAxis.showGridlines = false;
+            crAxis.title = "Contact Rate (Tickets per User)";
 
-	  d3.select("body")
-		  .append("h2")
-		  .text("Reduction of Support Contact Rate through rollout of new back-end");
+            
+      		// Add plots
+      		var bar = myChart.addSeries(["Comment", "Contact Rate", "Users", "Monthly Tickets"], dimple.plot.bar, [x, ticketAxis]);
+            myChart.addSeries("Monthly Users", dimple.plot.line, [x, usersAxis]);
+            var dots = myChart.addSeries(["Comment", "Contact Rate", "Tickets", " "],
+                dimple.plot.scatter, [x, usersAxis]); //invisible scatter for tooltip
+            var line = myChart.addSeries("Contact Rate (Tickets / Users)", dimple.plot.line, [x, crAxis]);
+            myChart.addSeries(["Comment", "Users", "Tickets", "Contact Rate (Tickets / Users)"], dimple.plot.scatter, [x, crAxis]);
 
-          var svg = d3.select("body")
-            .append("svg")
-              .attr("width", width + margin)
-              .attr("height", height + margin)
-            .append('g')
-                .attr('class','chart');
+      
+            // Configure plots
+      		bar.x.floatingBarWidth = 20;
+            line.lineWeight = 3;
 
-      /*
-        Dimple.js Chart construction code
-      */
+      
+      		// Define colours
+            myChart.assignColor("Monthly Users", "black", "black", 0.20);
+            myChart.assignColor(" ", "black", "black", 0); //make user scatter invisible
+            myChart.assignColor("Monthly Tickets", "white", "black", 0.20);
+      
+      
+      		// Add Legend
+      		myChart.addLegend("50%", 10, 380, 20, "right");
 
-          var myChart = new dimple.chart(svg, data);
-	  var x = myChart.addTimeAxis("x", "Date", "%b %Y","%b %y");
-	  x.overrideMin = new Date("Dec 2010");
-	  x.overrideMax = new Date("Feb 2013");
-	  var usersAxis = myChart.addMeasureAxis("y", "Users");
-          var ticketAxis = myChart.addMeasureAxis(usersAxis, "Tickets");
-	  var crAxis = myChart.addMeasureAxis("y", "Contact Rate");
-          usersAxis.showGridlines = false;
-          usersAxis.title = "Monthly Users / Tickets (indexed at 100)";
-	  crAxis.showGridlines = false;
-          crAxis.title = "Contact Rate (Tickets / Users)";
-	  
-	  var bar = myChart.addSeries(["Comment", "Contact Rate", "Users", "Monthly Tickets"], dimple.plot.bar, [x, ticketAxis]);
-	  myChart.addSeries("Monthly Users", dimple.plot.line, [x, usersAxis]);
-	  var dots = myChart.addSeries(["Comment", "Contact Rate", "Tickets", " "], 
-						dimple.plot.scatter, [x, usersAxis]); //invisible scatter for tooltip
-          var line = myChart.addSeries("Contact Rate (Tickets / Users)", dimple.plot.line,[x, crAxis]);
-	  myChart.addSeries(["Comment", "Users", "Tickets", "Contact Rate (Tickets / Users)"], dimple.plot.scatter,[x, crAxis]);
-	  
-	  bar.x.floatingBarWidth = 20;
-	  line.lineWeight = 3;
+      
+      		// Draw Chart
+            myChart.draw();
 
-	  myChart.assignColor("Monthly Users", "black", "black", 0.20);
-	  myChart.assignColor(" ", "black", "black", 0); //make user scatter invisible
-	  myChart.assignColor("Monthly Tickets", "white", "black", 0.20);
-	  myChart.addLegend("50%", 10, 380, 20, "right");
-
-	  myChart.draw();
-     
         };
-	
-      </script>
-  </head>
+    </script>
+</head>
+
 <body>
-  <script type="text/javascript">
-  /*
-    Use D3 (not dimple.js) to load the TSV file
-    and pass the contents of it to the draw function
-    */
-  d3.tsv("contact_rate.tsv", draw);
-  </script>
+    <script type="text/javascript">
+        /*
+          Use D3 (not dimple.js) to load the TSV file
+          and pass the contents of it to the draw function
+        */
+        d3.tsv("contact_rate.tsv", draw);
+    </script>
 </body>
+
 </html>
