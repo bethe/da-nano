@@ -39,10 +39,10 @@ I asked my girlfriend as well as two friends, both in consulting, to give me fee
 **(7) Would be helpful to get more explanations on downward trend**  
 --> Added "Comment" entries to raw data and embedded via tooltip 
 
-**(8) Confusing y1 axis title "Tickets / Users" sounds like "Tickets divided by Users"**
+**(8) Confusing y1 axis title "Tickets / Users" sounds like "Tickets divided by Users"**  
 --> Changed to "Index (starts at 100 for both Tickets and Users)"
 
-**(9) Tooltips contain too much information**
+**(9) Tooltips contain too much information**  
 --> Simplified and only added "comment" field to tooltip for Contact Rate
 
 
